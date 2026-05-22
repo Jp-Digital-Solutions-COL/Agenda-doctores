@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // Formato "lunes 23 de junio de 2025" en es-MX
 function formatFecha(iso: string): string {
   return new Intl.DateTimeFormat("es-MX", {
@@ -81,6 +79,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const supabase = createAdminClient(); // se salta el RLS
 
   // ── Ventana de tiempo: mañana en UTC ──────────────────────
