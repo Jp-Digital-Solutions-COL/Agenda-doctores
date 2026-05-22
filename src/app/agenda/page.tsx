@@ -1,0 +1,45 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getDoctoresActivos,
+  getPacientesBasic,
+  getCitas,
+} from "./actions";
+import AgendaClient from "./agenda-client";
+import { startOfWeek, endOfWeek, toDateStr } from "./utils";
+
+export default async function AgendaPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("consultorio_id")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.consultorio_id) redirect("/onboarding");
+
+  const today = new Date();
+  const ws = startOfWeek(today);
+  const we = endOfWeek(today);
+
+  const [doctors, pacientes, citas] = await Promise.all([
+    getDoctoresActivos(),
+    getPacientesBasic(),
+    getCitas(`${toDateStr(ws)}T00:00:00`, `${toDateStr(we)}T23:59:59`),
+  ]);
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      <AgendaClient
+        doctors={doctors}
+        pacientes={pacientes}
+        initialCitas={citas}
+        todayStr={toDateStr(today)}
+      />
+    </div>
+  );
+}
