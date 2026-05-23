@@ -108,8 +108,20 @@ export default function DoctoresClient({ doctores: initial }: Props) {
                   key={doctor.id}
                   className={!doctor.activo ? "opacity-60 bg-muted/30" : ""}
                 >
-                  <TableCell className="font-medium">
-                    {doctor.nombre}
+                  <TableCell>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0">
+                        {doctor.foto_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={doctor.foto_url} alt={doctor.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] font-semibold text-muted-foreground select-none">
+                            {doctor.nombre.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-medium">{doctor.nombre}</span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {doctor.especialidad ?? (

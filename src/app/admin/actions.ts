@@ -49,7 +49,7 @@ export async function updateConsultorio(
 
 // ── Equipo ────────────────────────────────────────────────────────────
 
-export type SecretariaItem = { id: string; email: string };
+export type SecretariaItem = { id: string; email: string; nombre: string };
 export type DoctorItem = {
   id: string;
   nombre: string;
@@ -66,27 +66,28 @@ export async function getSecretarias(
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id")
+    .select("id, nombre")
     .eq("consultorio_id", consultorioId)
     .eq("rol", "secretaria");
 
   if (!profiles?.length) return [];
 
-  const ids = new Set(profiles.map((p) => p.id));
+  const profileMap = new Map(profiles.map((p) => [p.id, p.nombre as string]));
   const { data: usersData } = await admin.auth.admin.listUsers({
     page: 1,
     perPage: 1000,
   });
 
   return (usersData?.users ?? [])
-    .filter((u) => ids.has(u.id))
-    .map((u) => ({ id: u.id, email: u.email ?? "" }));
+    .filter((u) => profileMap.has(u.id))
+    .map((u) => ({ id: u.id, email: u.email ?? "", nombre: profileMap.get(u.id) ?? "" }));
 }
 
 export async function createSecretaria(
   consultorioId: string,
   email: string,
-  password: string
+  password: string,
+  nombre: string
 ): Promise<{ error?: string }> {
   await assertSuperadmin();
   const admin = createAdminClient();
@@ -106,11 +107,14 @@ export async function createSecretaria(
 
   const { error: profileError } = await admin
     .from("profiles")
-    .upsert({ id: authData.user.id, consultorio_id: consultorioId, rol: "secretaria" });
+    .upsert(
+      { id: authData.user.id, consultorio_id: consultorioId, rol: "secretaria", nombre: nombre.trim() },
+      { onConflict: "id", ignoreDuplicates: false }
+    );
 
   if (profileError) {
     await admin.auth.admin.deleteUser(authData.user.id);
-    return { error: "No se pudo crear el perfil." };
+    return { error: `No se pudo crear el perfil: ${profileError.message}` };
   }
 
   return {};

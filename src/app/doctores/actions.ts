@@ -18,7 +18,8 @@ export async function getDoctores(): Promise<Doctor[]> {
 
 export async function createDoctor(
   nombre: string,
-  especialidad: string
+  especialidad: string,
+  foto_url: string | null
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
@@ -40,6 +41,7 @@ export async function createDoctor(
   const { error } = await supabase.from("doctores").insert({
     nombre: nombre.trim(),
     especialidad: especialidad.trim() || null,
+    foto_url,
     consultorio_id: profile.consultorio_id,
     activo: true,
   });
@@ -52,12 +54,13 @@ export async function createDoctor(
 export async function updateDoctor(
   id: string,
   nombre: string,
-  especialidad: string
+  especialidad: string,
+  foto_url: string | null
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("doctores")
-    .update({ nombre: nombre.trim(), especialidad: especialidad.trim() || null })
+    .update({ nombre: nombre.trim(), especialidad: especialidad.trim() || null, foto_url })
     .eq("id", id);
 
   if (error) return { error: "No se pudo actualizar el doctor." };

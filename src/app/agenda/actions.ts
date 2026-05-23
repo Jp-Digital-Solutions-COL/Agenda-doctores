@@ -63,7 +63,7 @@ export async function getCitas(
     .gte("inicio", start)
     .lte("inicio", end)
     .order("inicio");
-  if (error) throw new Error(error.message);
+  if (error) { console.error("getCitas error:", error.message); return []; }
   // Map placeholder patient rows to virtual "bloqueada" estado
   const rows = (data ?? []) as CitaConRel[];
   return rows.map((c) =>

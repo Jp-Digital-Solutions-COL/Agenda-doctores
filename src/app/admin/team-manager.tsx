@@ -50,7 +50,10 @@ function SecretariaRow({
         className="w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-muted/50 transition-colors"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="font-medium truncate">{sec.email}</span>
+        <div className="flex flex-col items-start min-w-0">
+          <span className="font-medium truncate">{sec.nombre || sec.email}</span>
+          {sec.nombre && <span className="text-xs text-muted-foreground truncate">{sec.email}</span>}
+        </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <span className="text-xs text-muted-foreground">
             {asignadas.size} doctor{asignadas.size !== 1 ? "es" : ""}
@@ -109,6 +112,7 @@ export default function TeamManager({ consultorios }: Props) {
   const [loadingData, setLoadingData] = useState(false);
 
   // New secretaria form
+  const [secNombre, setSecNombre] = useState("");
   const [secEmail, setSecEmail] = useState("");
   const [secPassword, setSecPassword] = useState("");
   const [secLoading, setSecLoading] = useState(false);
@@ -176,12 +180,13 @@ export default function TeamManager({ consultorios }: Props) {
     if (!consultorioId) return;
     setSecLoading(true);
     setSecError("");
-    const r = await createSecretaria(consultorioId, secEmail.trim(), secPassword);
+    const r = await createSecretaria(consultorioId, secEmail.trim(), secPassword, secNombre.trim());
     setSecLoading(false);
     if (r.error) {
       setSecError(r.error);
       return;
     }
+    setSecNombre("");
     setSecEmail("");
     setSecPassword("");
     setSecOpen(false);
@@ -288,6 +293,17 @@ export default function TeamManager({ consultorios }: Props) {
                       className="border rounded-lg p-3 space-y-2.5 bg-muted/30"
                     >
                       <div className="space-y-1">
+                        <Label className="text-xs">Nombre completo</Label>
+                        <Input
+                          required
+                          placeholder="Ana López"
+                          value={secNombre}
+                          onChange={(e) => setSecNombre(e.target.value)}
+                          className="h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Correo</Label>
                         <Input
                           type="email"
@@ -333,6 +349,7 @@ export default function TeamManager({ consultorios }: Props) {
                           className="h-7 text-xs"
                           onClick={() => {
                             setSecOpen(false);
+                            setSecNombre("");
                             setSecEmail("");
                             setSecPassword("");
                             setSecError("");

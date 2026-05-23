@@ -3,6 +3,7 @@ export type Doctor = {
   consultorio_id: string;
   nombre: string;
   especialidad: string | null;
+  foto_url: string | null;
   activo: boolean;
   created_at: string;
 };
