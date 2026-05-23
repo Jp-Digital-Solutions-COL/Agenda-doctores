@@ -77,6 +77,7 @@ export type SecretariaGlobal = {
   id: string;
   nombre: string;
   email: string;
+  telefono: string | null;
   consultorio_id: string | null;
   consultorio_nombre: string | null;
   activo: boolean;
@@ -100,7 +101,7 @@ export async function getAllSecretarias(): Promise<SecretariaGlobal[]> {
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, nombre, consultorio_id, activo, consultorios(nombre)")
+    .select("id, nombre, consultorio_id, activo, telefono, consultorios(nombre)")
     .eq("rol", "secretaria")
     .order("nombre");
 
@@ -121,6 +122,7 @@ export async function getAllSecretarias(): Promise<SecretariaGlobal[]> {
       id: p.id,
       nombre: (p.nombre as string) ?? "",
       email: emailMap.get(p.id) ?? "",
+      telefono: (p.telefono as string | null) ?? null,
       consultorio_id: (p.consultorio_id as string | null) ?? null,
       consultorio_nombre: cons?.nombre ?? null,
       activo: (p.activo as boolean) ?? true,
@@ -397,14 +399,17 @@ export async function updateDoctorAdmin(
 
 export async function updateSecretaria(
   id: string,
-  data: { nombre: string; password?: string }
+  data: { nombre: string; telefono?: string | null; password?: string }
 ): Promise<{ error?: string }> {
   await assertSuperadmin();
   const admin = createAdminClient();
 
+  const profileUpdate: Record<string, unknown> = { nombre: data.nombre.trim() };
+  if (data.telefono !== undefined) profileUpdate.telefono = data.telefono || null;
+
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ nombre: data.nombre.trim() })
+    .update(profileUpdate)
     .eq("id", id);
   if (profileError) return { error: profileError.message };
 

@@ -49,6 +49,43 @@ import {
 } from "lucide-react";
 import type { ConsultorioAdmin } from "./admin-client";
 
+// ── Phone helpers ──────────────────────────────────────────────────────
+
+const COUNTRIES = [
+  { code: "+57",  flag: "🇨🇴", name: "Colombia" },
+  { code: "+52",  flag: "🇲🇽", name: "México" },
+  { code: "+1",   flag: "🇺🇸", name: "EE.UU. / Canadá" },
+  { code: "+54",  flag: "🇦🇷", name: "Argentina" },
+  { code: "+55",  flag: "🇧🇷", name: "Brasil" },
+  { code: "+56",  flag: "🇨🇱", name: "Chile" },
+  { code: "+51",  flag: "🇵🇪", name: "Perú" },
+  { code: "+593", flag: "🇪🇨", name: "Ecuador" },
+  { code: "+58",  flag: "🇻🇪", name: "Venezuela" },
+  { code: "+591", flag: "🇧🇴", name: "Bolivia" },
+  { code: "+595", flag: "🇵🇾", name: "Paraguay" },
+  { code: "+598", flag: "🇺🇾", name: "Uruguay" },
+  { code: "+507", flag: "🇵🇦", name: "Panamá" },
+  { code: "+506", flag: "🇨🇷", name: "Costa Rica" },
+  { code: "+502", flag: "🇬🇹", name: "Guatemala" },
+  { code: "+504", flag: "🇭🇳", name: "Honduras" },
+  { code: "+503", flag: "🇸🇻", name: "El Salvador" },
+  { code: "+505", flag: "🇳🇮", name: "Nicaragua" },
+  { code: "+34",  flag: "🇪🇸", name: "España" },
+  { code: "+44",  flag: "🇬🇧", name: "Reino Unido" },
+] as const;
+
+type CountryCode = (typeof COUNTRIES)[number]["code"];
+
+function parsePhone(telefono: string | null): { code: CountryCode; local: string } {
+  if (!telefono) return { code: "+57", local: "" };
+  // Match longest prefix first to avoid +59 shadowing +593/+595/+598
+  const sorted = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  const found = sorted.find((c) => telefono.startsWith(c.code));
+  return found
+    ? { code: found.code, local: telefono.slice(found.code.length) }
+    : { code: "+57", local: telefono };
+}
+
 interface Props {
   consultorios: ConsultorioAdmin[];
 }
@@ -115,7 +152,7 @@ function SecretariaRow({
   onAssignConsultorio: (id: string, consultorioId: string | null) => void;
   onToggleDoctor: (secId: string, docId: string, asignar: boolean) => void;
   onOpen: (consultorioId: string | null) => void;
-  onEditSave: (id: string, nombre: string) => void;
+  onEditSave: (id: string, nombre: string, telefono: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [savingActivo, setSavingActivo] = useState(false);
@@ -124,6 +161,7 @@ function SecretariaRow({
   // Edit state
   const [editOpen, setEditOpen] = useState(false);
   const [editNombre, setEditNombre] = useState(sec.nombre);
+  const [editPhone, setEditPhone] = useState(() => parsePhone(sec.telefono));
   const [editPassword, setEditPassword] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
@@ -145,15 +183,19 @@ function SecretariaRow({
     e.preventDefault();
     setEditLoading(true);
     setEditError("");
+    const fullPhone = editPhone.local.trim()
+      ? editPhone.code + editPhone.local.trim()
+      : null;
     const r = await updateSecretaria(sec.id, {
       nombre: editNombre,
+      telefono: fullPhone,
       password: editPassword || undefined,
     });
     setEditLoading(false);
     if (r.error) { setEditError(r.error); return; }
     setEditSaved(true);
     setEditPassword("");
-    onEditSave(sec.id, editNombre.trim());
+    onEditSave(sec.id, editNombre.trim(), fullPhone);
     setTimeout(() => setEditSaved(false), 2000);
   }
 
@@ -178,6 +220,9 @@ function SecretariaRow({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{sec.nombre || sec.email}</p>
           {sec.nombre && <p className="text-xs text-muted-foreground truncate">{sec.email}</p>}
+          {sec.telefono && (
+            <p className="text-xs text-muted-foreground/70 truncate">{sec.telefono}</p>
+          )}
         </div>
 
         {/* Consultorio selector */}
@@ -284,6 +329,32 @@ function SecretariaRow({
                   />
                 </div>
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Teléfono (opcional)</Label>
+                <div className="flex">
+                  <select
+                    value={editPhone.code}
+                    onChange={(e) => setEditPhone((p) => ({ ...p, code: e.target.value as CountryCode }))}
+                    disabled={editLoading}
+                    className="h-7 text-xs border border-input rounded-l-md bg-background px-1.5 pr-5 shrink-0 focus:outline-none focus:ring-1 focus:ring-ring"
+                    style={{ appearance: "none" }}
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.code}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    type="tel"
+                    placeholder="3001234567"
+                    value={editPhone.local}
+                    onChange={(e) => setEditPhone((p) => ({ ...p, local: e.target.value }))}
+                    className="h-7 text-xs rounded-l-none border-l-0 flex-1"
+                    disabled={editLoading}
+                  />
+                </div>
+              </div>
               {editError && <p className="text-xs text-destructive">{editError}</p>}
               <div className="flex gap-2">
                 <Button
@@ -291,7 +362,7 @@ function SecretariaRow({
                   variant="outline"
                   size="sm"
                   className="h-6 text-xs flex-1"
-                  onClick={() => { setEditOpen(false); setEditError(""); setEditNombre(sec.nombre); setEditPassword(""); }}
+                  onClick={() => { setEditOpen(false); setEditError(""); setEditNombre(sec.nombre); setEditPhone(parsePhone(sec.telefono)); setEditPassword(""); }}
                   disabled={editLoading}
                 >
                   Cancelar
@@ -414,9 +485,9 @@ function SecretariasTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) 
     }
   }
 
-  function handleEditSave(id: string, nombre: string) {
+  function handleEditSave(id: string, nombre: string, telefono: string | null) {
     setSecretarias((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, nombre } : s))
+      prev.map((s) => (s.id === id ? { ...s, nombre, telefono } : s))
     );
   }
 
