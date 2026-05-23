@@ -379,6 +379,45 @@ export async function toggleDoctorBloqueadoPago(
   return {};
 }
 
+export async function updateDoctorAdmin(
+  id: string,
+  data: { nombre: string; especialidad: string | null; foto_url?: string | null }
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+  const update: Record<string, unknown> = {
+    nombre: data.nombre.trim(),
+    especialidad: data.especialidad,
+  };
+  if (data.foto_url !== undefined) update.foto_url = data.foto_url;
+  const { error } = await admin.from("doctores").update(update).eq("id", id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updateSecretaria(
+  id: string,
+  data: { nombre: string; password?: string }
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ nombre: data.nombre.trim() })
+    .eq("id", id);
+  if (profileError) return { error: profileError.message };
+
+  if (data.password) {
+    const { error: authError } = await admin.auth.admin.updateUserById(id, {
+      password: data.password,
+    });
+    if (authError) return { error: authError.message };
+  }
+
+  return {};
+}
+
 // ── Asignaciones secretaria↔doctor ───────────────────────────────────
 
 export async function getAsignaciones(

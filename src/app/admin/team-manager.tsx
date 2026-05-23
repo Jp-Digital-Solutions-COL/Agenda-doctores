@@ -6,8 +6,10 @@ import {
   createSecretaria,
   assignSecretariaToConsultorio,
   toggleSecretariaActivo,
+  updateSecretaria,
   getDoctoresAdmin,
   createDoctorAdmin,
+  updateDoctorAdmin,
   toggleDoctorActivoAdmin,
   toggleDoctorBloqueadoPago,
   getDoctoresConsultorio,
@@ -38,6 +40,7 @@ import {
   Lock,
   LockOpen,
   Loader2,
+  Pencil,
   Plus,
   Search,
   Stethoscope,
@@ -102,6 +105,7 @@ function SecretariaRow({
   onAssignConsultorio,
   onToggleDoctor,
   onOpen,
+  onEditSave,
 }: {
   sec: SecretariaGlobal;
   doctors: DoctorItem[];
@@ -111,10 +115,19 @@ function SecretariaRow({
   onAssignConsultorio: (id: string, consultorioId: string | null) => void;
   onToggleDoctor: (secId: string, docId: string, asignar: boolean) => void;
   onOpen: (consultorioId: string | null) => void;
+  onEditSave: (id: string, nombre: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [savingActivo, setSavingActivo] = useState(false);
   const [savingConsultorio, setSavingConsultorio] = useState(false);
+
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editNombre, setEditNombre] = useState(sec.nombre);
+  const [editPassword, setEditPassword] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSaved, setEditSaved] = useState(false);
 
   async function handleToggleActivo(v: boolean) {
     setSavingActivo(true);
@@ -126,6 +139,22 @@ function SecretariaRow({
     setSavingConsultorio(true);
     await onAssignConsultorio(sec.id, val === "__none__" ? null : val);
     setSavingConsultorio(false);
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError("");
+    const r = await updateSecretaria(sec.id, {
+      nombre: editNombre,
+      password: editPassword || undefined,
+    });
+    setEditLoading(false);
+    if (r.error) { setEditError(r.error); return; }
+    setEditSaved(true);
+    setEditPassword("");
+    onEditSave(sec.id, editNombre.trim());
+    setTimeout(() => setEditSaved(false), 2000);
   }
 
   return (
@@ -177,6 +206,16 @@ function SecretariaRow({
           )}
         </div>
 
+        {/* Edit button */}
+        <button
+          type="button"
+          title="Editar secretaria"
+          onClick={() => { setEditOpen((v) => !v); setEditError(""); setEditSaved(false); if (!open) { setOpen(true); onOpen(sec.consultorio_id); } }}
+          className={`h-6 w-6 flex items-center justify-center rounded-md border transition-colors shrink-0 ${editOpen ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+        >
+          <Pencil className="h-3 w-3" />
+        </button>
+
         {/* Activo toggle */}
         <TogglePill
           checked={sec.activo}
@@ -185,38 +224,88 @@ function SecretariaRow({
         />
       </div>
 
-      {/* Doctor assignments */}
+      {/* Doctor assignments + edit */}
       {open && (
-        <div className="border-t px-3 py-3 space-y-2 bg-muted/20">
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">
-            Doctores asignados
-          </p>
-          {doctors.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No hay doctores en este consultorio.
-            </p>
-          ) : (
-            doctors.map((doc) => (
-              <label key={doc.id} className="flex items-center gap-2.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border accent-primary cursor-pointer"
-                  checked={asignadas.has(doc.id)}
-                  onChange={(e) => onToggleDoctor(sec.id, doc.id, e.target.checked)}
-                />
-                <span className="text-sm leading-none group-hover:text-foreground transition-colors">
-                  {doc.nombre}
-                  {doc.especialidad && (
-                    <span className="text-muted-foreground ml-1 text-xs">
-                      · {doc.especialidad}
-                    </span>
-                  )}
-                </span>
-                {!doc.activo && (
-                  <span className="text-xs text-muted-foreground">(inactivo)</span>
-                )}
-              </label>
-            ))
+        <div className="border-t px-3 py-3 space-y-3 bg-muted/20">
+          {/* Doctor checkboxes */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Doctores asignados</p>
+            {doctors.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No hay doctores en este consultorio.</p>
+            ) : (
+              doctors.map((doc) => (
+                <label key={doc.id} className="flex items-center gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border accent-primary cursor-pointer"
+                    checked={asignadas.has(doc.id)}
+                    onChange={(e) => onToggleDoctor(sec.id, doc.id, e.target.checked)}
+                  />
+                  <span className="text-sm leading-none group-hover:text-foreground transition-colors">
+                    {doc.nombre}
+                    {doc.especialidad && (
+                      <span className="text-muted-foreground ml-1 text-xs">· {doc.especialidad}</span>
+                    )}
+                  </span>
+                  {!doc.activo && <span className="text-xs text-muted-foreground">(inactivo)</span>}
+                </label>
+              ))
+            )}
+          </div>
+
+          {/* Edit form */}
+          {editOpen && (
+            <form
+              onSubmit={handleSaveEdit}
+              className="border rounded-md p-2.5 space-y-2 bg-background"
+            >
+              <p className="text-xs font-semibold text-muted-foreground">Editar secretaria</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nombre</Label>
+                  <Input
+                    required
+                    value={editNombre}
+                    onChange={(e) => setEditNombre(e.target.value)}
+                    className="h-7 text-xs"
+                    disabled={editLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nueva contraseña (opcional)</Label>
+                  <Input
+                    type="password"
+                    minLength={6}
+                    placeholder="Dejar vacío para no cambiar"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    className="h-7 text-xs"
+                    disabled={editLoading}
+                  />
+                </div>
+              </div>
+              {editError && <p className="text-xs text-destructive">{editError}</p>}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-xs flex-1"
+                  onClick={() => { setEditOpen(false); setEditError(""); setEditNombre(sec.nombre); setEditPassword(""); }}
+                  disabled={editLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  className={`h-6 text-xs flex-1 ${editSaved ? "bg-green-600 hover:bg-green-600" : ""}`}
+                  disabled={editLoading || !editNombre.trim()}
+                >
+                  {editLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : editSaved ? "Guardado ✓" : "Guardar"}
+                </Button>
+              </div>
+            </form>
           )}
         </div>
       )}
@@ -323,6 +412,12 @@ function SecretariasTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) 
     if (consultorioId && consultorioId !== selectedConsultorio) {
       await loadDoctorsForConsultorio(consultorioId);
     }
+  }
+
+  function handleEditSave(id: string, nombre: string) {
+    setSecretarias((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, nombre } : s))
+    );
   }
 
   async function handleToggleDoctor(secId: string, docId: string, asignar: boolean) {
@@ -492,6 +587,7 @@ function SecretariasTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) 
                 onToggleActivo={handleToggleActivo}
                 onAssignConsultorio={handleAssignConsultorio}
                 onToggleDoctor={handleToggleDoctor}
+                onEditSave={handleEditSave}
                 onOpen={(cid) => {
                   if (cid && cid !== selectedConsultorio) loadDoctorsForConsultorio(cid);
                 }}
@@ -521,6 +617,19 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   const [docUploading, setDocUploading] = useState(false);
   const [docError, setDocError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit doctor
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editDocNombre, setEditDocNombre] = useState("");
+  const [editDocEsp, setEditDocEsp] = useState("");
+  const [editDocCurrentUrl, setEditDocCurrentUrl] = useState<string | null>(null);
+  const [editDocPendingBlob, setEditDocPendingBlob] = useState<Blob | null>(null);
+  const [editDocPreviewUrl, setEditDocPreviewUrl] = useState<string | null>(null);
+  const [editDocRemovePhoto, setEditDocRemovePhoto] = useState(false);
+  const [editDocLoading, setEditDocLoading] = useState(false);
+  const [editDocUploading, setEditDocUploading] = useState(false);
+  const [editDocError, setEditDocError] = useState("");
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   async function loadDoctors(cid: string) {
     setLoadingDoctors(true);
@@ -620,6 +729,93 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
         prev.map((d) => (d.id === id ? { ...d, bloqueado_pago: !bloqueado } : d))
       );
     }
+  }
+
+  function handleStartEdit(doc: DoctorAdmin) {
+    setEditingDocId(doc.id);
+    setEditDocNombre(doc.nombre);
+    setEditDocEsp(doc.especialidad ?? "");
+    setEditDocCurrentUrl(doc.foto_url);
+    setEditDocPendingBlob(null);
+    if (editDocPreviewUrl) URL.revokeObjectURL(editDocPreviewUrl);
+    setEditDocPreviewUrl(null);
+    setEditDocRemovePhoto(false);
+    setEditDocError("");
+    setFormOpen(false);
+  }
+
+  function handleCancelEdit() {
+    if (editDocPreviewUrl) URL.revokeObjectURL(editDocPreviewUrl);
+    setEditingDocId(null);
+    setEditDocPreviewUrl(null);
+    setEditDocPendingBlob(null);
+    setEditDocError("");
+  }
+
+  async function handleEditFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setEditDocError("La imagen no puede pesar más de 10 MB."); return; }
+    setEditDocError("");
+    try {
+      const blob = await convertToWebP(file);
+      setEditDocPendingBlob(blob);
+      if (editDocPreviewUrl) URL.revokeObjectURL(editDocPreviewUrl);
+      setEditDocPreviewUrl(URL.createObjectURL(blob));
+      setEditDocRemovePhoto(false);
+    } catch { setEditDocError("No se pudo procesar la imagen."); }
+    e.target.value = "";
+  }
+
+  function handleRemoveEditPhoto() {
+    if (editDocPreviewUrl) URL.revokeObjectURL(editDocPreviewUrl);
+    setEditDocPreviewUrl(null);
+    setEditDocPendingBlob(null);
+    setEditDocCurrentUrl(null);
+    setEditDocRemovePhoto(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!editingDocId || !editDocNombre.trim()) return;
+    setEditDocLoading(true);
+    setEditDocError("");
+
+    let foto_url: string | null | undefined = undefined;
+    if (editDocPendingBlob) {
+      setEditDocUploading(true);
+      try {
+        foto_url = await uploadToCloudinary(editDocPendingBlob);
+      } catch (err) {
+        setEditDocError(err instanceof Error ? err.message : "No se pudo subir la foto.");
+        setEditDocLoading(false);
+        setEditDocUploading(false);
+        return;
+      }
+      setEditDocUploading(false);
+    } else if (editDocRemovePhoto) {
+      foto_url = null;
+    }
+
+    const r = await updateDoctorAdmin(editingDocId, {
+      nombre: editDocNombre.trim(),
+      especialidad: editDocEsp.trim() || null,
+      foto_url,
+    });
+    setEditDocLoading(false);
+    if (r.error) { setEditDocError(r.error); return; }
+
+    const finalUrl = foto_url !== undefined ? foto_url : editDocCurrentUrl;
+    setDoctors((prev) =>
+      prev.map((d) =>
+        d.id === editingDocId
+          ? { ...d, nombre: editDocNombre.trim(), especialidad: editDocEsp.trim() || null, foto_url: finalUrl }
+          : d
+      )
+    );
+    if (editDocPreviewUrl) URL.revokeObjectURL(editDocPreviewUrl);
+    setEditingDocId(null);
+    setEditDocPreviewUrl(null);
+    setEditDocPendingBlob(null);
   }
 
   return (
@@ -753,6 +949,15 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
             </form>
           )}
 
+          {/* Hidden file input for edit */}
+          <input
+            ref={editFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleEditFileChange}
+          />
+
           {/* Doctors list */}
           {loadingDoctors ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
@@ -767,6 +972,91 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
             <div className="space-y-2">
               {doctors.map((doc) => {
                 const initials = getInitials(doc.nombre);
+                const isEditing = editingDocId === doc.id;
+
+                if (isEditing) {
+                  const displayPhoto = editDocPreviewUrl ?? editDocCurrentUrl;
+                  return (
+                    <div key={doc.id} className="border rounded-lg p-3 space-y-2.5 bg-muted/30">
+                      {/* Photo + name/specialty row */}
+                      <div className="flex items-center gap-3">
+                        <div className="relative group shrink-0">
+                          <div
+                            className="w-12 h-12 rounded-full overflow-hidden bg-muted border-2 border-border flex items-center justify-center cursor-pointer"
+                            onClick={() => editFileInputRef.current?.click()}
+                          >
+                            {displayPhoto ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={displayPhoto} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-sm font-bold text-muted-foreground">{initials}</span>
+                            )}
+                            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <Camera className="h-3.5 w-3.5 text-white" />
+                            </div>
+                          </div>
+                          {displayPhoto && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveEditPhoto}
+                              className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 flex-1">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Nombre</Label>
+                            <Input
+                              autoFocus
+                              required
+                              value={editDocNombre}
+                              onChange={(e) => setEditDocNombre(e.target.value)}
+                              className="h-7 text-xs"
+                              disabled={editDocLoading}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Especialidad</Label>
+                            <Input
+                              placeholder="Opcional"
+                              value={editDocEsp}
+                              onChange={(e) => setEditDocEsp(e.target.value)}
+                              className="h-7 text-xs"
+                              disabled={editDocLoading}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {editDocError && <p className="text-xs text-destructive">{editDocError}</p>}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={handleCancelEdit}
+                          disabled={editDocLoading}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={handleSaveEdit}
+                          disabled={editDocLoading || !editDocNombre.trim()}
+                        >
+                          {editDocUploading ? (
+                            <><Loader2 className="h-3 w-3 animate-spin mr-1" />Subiendo...</>
+                          ) : editDocLoading ? "Guardando..." : "Guardar"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={doc.id}
@@ -801,6 +1091,16 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                         Sin pago
                       </Badge>
                     )}
+
+                    {/* Edit button */}
+                    <button
+                      type="button"
+                      title="Editar doctor"
+                      onClick={() => handleStartEdit(doc)}
+                      className="h-7 w-7 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
 
                     {/* Bloquear pago toggle */}
                     <button
