@@ -22,7 +22,6 @@ import {
 } from "./actions";
 import { convertToWebP, uploadToCloudinary } from "@/lib/cloudinary";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -47,6 +46,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { CollapsibleSection } from "./admin-client";
 import type { ConsultorioAdmin } from "./admin-client";
 
 // ── Phone helpers ──────────────────────────────────────────────────────
@@ -1227,53 +1227,14 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
 // ── Main TeamManager ───────────────────────────────────────────────────
 
 export default function TeamManager({ consultorios }: Props) {
-  const [tab, setTab] = useState<"secretarias" | "doctores">("secretarias");
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Gestión de equipo
-        </h2>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-0">
-          <div className="flex gap-1 border-b">
-            <button
-              type="button"
-              onClick={() => setTab("secretarias")}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tab === "secretarias"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Users className="h-3.5 w-3.5" />
-              Secretarias
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("doctores")}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tab === "doctores"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Stethoscope className="h-3.5 w-3.5" />
-              Doctores
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {tab === "secretarias" ? (
-            <SecretariasTab consultorios={consultorios} />
-          ) : (
-            <DoctoresTab consultorios={consultorios} />
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-3">
+      <CollapsibleSection title="Secretarias">
+        <SecretariasTab consultorios={consultorios} />
+      </CollapsibleSection>
+      <CollapsibleSection title="Doctores">
+        <DoctoresTab consultorios={consultorios} />
+      </CollapsibleSection>
     </div>
   );
 }

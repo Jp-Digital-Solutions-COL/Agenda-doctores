@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, TrendingUp, Building2, LayoutDashboard, Check, LogOut, Plus, X } from "lucide-react";
+import { Users, TrendingUp, Building2, LayoutDashboard, Check, LogOut, Plus, X, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import TeamManager from "./team-manager";
@@ -57,6 +57,42 @@ const ESTADO_CONFIG: Record<
     border: "border-red-200",
   },
 };
+
+export function CollapsibleSection({
+  title,
+  count,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 hover:bg-muted/40 transition-colors text-left"
+      >
+        <ChevronDown
+          className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+            open ? "" : "-rotate-90"
+          }`}
+        />
+        <span className="text-sm font-semibold flex-1">{title}</span>
+        {count !== undefined && (
+          <span className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5 shrink-0">
+            {count}
+          </span>
+        )}
+      </button>
+      {open && <div className="border-t px-4 py-4">{children}</div>}
+    </div>
+  );
+}
 
 function formatPrecio(n: number): string {
   return n.toLocaleString("es-CO");
@@ -241,9 +277,9 @@ export default function AdminClient({
           <Image
             src="/Med-Agenda_solo_logo.png"
             alt="Med-Agenda"
-            width={40}
-            height={40}
-            className="h-10 w-auto"
+            width={72}
+            height={72}
+            className="h-16 w-auto"
             priority
           />
           <div>
@@ -293,64 +329,61 @@ export default function AdminClient({
         </Card>
       </div>
 
-      {/* Lista */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Consultorios
-          </h2>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs"
-            onClick={() => { setNewConsultorioOpen((v) => !v); setNewError(""); }}
-          >
-            {newConsultorioOpen ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-            {newConsultorioOpen ? "Cancelar" : "Nuevo consultorio"}
-          </Button>
-        </div>
-
-        {newConsultorioOpen && (
-          <form
-            onSubmit={handleCreateConsultorio}
-            className="border rounded-lg p-3 space-y-2.5 bg-muted/30"
-          >
-            <div className="space-y-1">
-              <Label className="text-xs">Nombre del consultorio</Label>
-              <Input
-                required
-                autoFocus
-                placeholder="Clínica San Rafael"
-                value={newNombre}
-                onChange={(e) => setNewNombre(e.target.value)}
-                className="h-8 text-sm"
-                disabled={newLoading}
-              />
-            </div>
-            {newError && <p className="text-xs text-destructive">{newError}</p>}
-            <Button type="submit" size="sm" className="h-7 text-xs" disabled={newLoading || !newNombre.trim()}>
-              {newLoading ? "Creando..." : "Crear consultorio"}
+      {/* Consultorios desplegable */}
+      <CollapsibleSection title="Consultorios" count={consultorios.length}>
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs"
+              onClick={() => { setNewConsultorioOpen((v) => !v); setNewError(""); }}
+            >
+              {newConsultorioOpen ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+              {newConsultorioOpen ? "Cancelar" : "Nuevo consultorio"}
             </Button>
-          </form>
-        )}
-
-        {consultorios.length === 0 ? (
-          <Card className="p-10 text-center">
-            <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
-              No hay consultorios registrados.
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {consultorios.map((c) => (
-              <ConsultorioCard key={c.id} c={c} />
-            ))}
           </div>
-        )}
-      </div>
 
-      {/* Equipo */}
+          {newConsultorioOpen && (
+            <form
+              onSubmit={handleCreateConsultorio}
+              className="border rounded-lg p-3 space-y-2.5 bg-muted/30"
+            >
+              <div className="space-y-1">
+                <Label className="text-xs">Nombre del consultorio</Label>
+                <Input
+                  required
+                  autoFocus
+                  placeholder="Clínica San Rafael"
+                  value={newNombre}
+                  onChange={(e) => setNewNombre(e.target.value)}
+                  className="h-8 text-sm"
+                  disabled={newLoading}
+                />
+              </div>
+              {newError && <p className="text-xs text-destructive">{newError}</p>}
+              <Button type="submit" size="sm" className="h-7 text-xs" disabled={newLoading || !newNombre.trim()}>
+                {newLoading ? "Creando..." : "Crear consultorio"}
+              </Button>
+            </form>
+          )}
+
+          {consultorios.length === 0 ? (
+            <div className="py-8 text-center">
+              <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No hay consultorios registrados.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {consultorios.map((c) => (
+                <ConsultorioCard key={c.id} c={c} />
+              ))}
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Equipo desplegable */}
       <TeamManager consultorios={consultorios} />
     </div>
   );
