@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Image from "next/image";
 
 export default function OnboardingForm() {
   const [nombre, setNombre] = useState("");
@@ -33,7 +34,16 @@ export default function OnboardingForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <div className="flex flex-col items-center gap-8 w-full max-w-md">
+      <Image
+        src="/Med-Agenda_sin_fondo.png"
+        alt="Med-Agenda"
+        width={280}
+        height={110}
+        className="h-28 w-auto"
+        priority
+      />
+      <Card className="w-full">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Configura tu consultorio</CardTitle>
         <CardDescription>
@@ -66,6 +76,7 @@ export default function OnboardingForm() {
           </Button>
         </form>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

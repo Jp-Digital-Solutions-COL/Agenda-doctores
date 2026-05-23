@@ -7,6 +7,7 @@ import { ESTADO_CONFIG } from "@/app/agenda/types";
 import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 // ── Timezone ──────────────────────────────────────────────────────────
 const TZ = "America/Mexico_City";
@@ -176,7 +177,14 @@ export default async function InicioPage() {
       {/* ── Barra de navegación ─────────────────────────────── */}
       <header className="border-b bg-background sticky top-0 z-10">
         <div className="flex items-center gap-3 px-4 h-12 max-w-5xl mx-auto">
-          <span className="font-semibold text-sm">Agenda Médica</span>
+          <Image
+              src="/Med-Agenda_sin_slogan.png"
+              alt="Med-Agenda"
+              width={140}
+              height={32}
+              className="h-7 w-auto"
+              priority
+            />
           <div className="h-4 w-px bg-border" />
           <nav className="flex gap-1">
             <span className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1 rounded-md">

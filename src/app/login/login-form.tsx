@@ -11,8 +11,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import Image from "next/image";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -41,9 +41,17 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Agenda Médica</CardTitle>
+    <div className="flex flex-col items-center gap-8 w-full max-w-md">
+      <Image
+        src="/Med-Agenda_sin_fondo.png"
+        alt="Med-Agenda"
+        width={280}
+        height={110}
+        className="h-28 w-auto"
+        priority
+      />
+      <Card className="w-full">
+      <CardHeader className="text-center pb-2">
         <CardDescription>Ingresa con tu correo y contraseña</CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,6 +94,7 @@ export default function LoginForm() {
           </Button>
         </form>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

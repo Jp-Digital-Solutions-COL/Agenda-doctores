@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Users, TrendingUp, Building2, LayoutDashboard, Check, LogOut, Plus, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import TeamManager from "./team-manager";
 import { signOut } from "./actions";
@@ -236,13 +237,23 @@ export default function AdminClient({
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       {/* Encabezado */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Panel de administración</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {consultorios.length} consultorio
-            {consultorios.length !== 1 ? "s" : ""} registrado
-            {consultorios.length !== 1 ? "s" : ""}
-          </p>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/Med-Agenda_solo_logo.png"
+            alt="Med-Agenda"
+            width={40}
+            height={40}
+            className="h-10 w-auto"
+            priority
+          />
+          <div>
+            <h1 className="text-2xl font-bold">Panel de administración</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {consultorios.length} consultorio
+              {consultorios.length !== 1 ? "s" : ""} registrado
+              {consultorios.length !== 1 ? "s" : ""}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <Link href="/inicio">

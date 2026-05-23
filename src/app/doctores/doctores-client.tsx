@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, CalendarDays } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface Props {
   doctores: Doctor[];
@@ -58,6 +60,23 @@ export default function DoctoresClient({ doctores: initial }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Logo nav */}
+      <div className="flex items-center justify-between">
+        <Link href="/inicio">
+          <Image
+            src="/Med-Agenda_sin_slogan.png"
+            alt="Med-Agenda"
+            width={140}
+            height={32}
+            className="h-7 w-auto"
+            priority
+          />
+        </Link>
+        <Link href="/inicio" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          ← Inicio
+        </Link>
+      </div>
+
       {/* Encabezado */}
       <div className="flex items-start justify-between gap-4">
         <div>

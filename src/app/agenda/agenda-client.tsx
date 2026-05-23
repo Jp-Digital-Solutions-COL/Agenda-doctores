@@ -25,8 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Calendar, CalendarDays, LayoutDashboard, Ban } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Calendar, CalendarDays, Ban } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 type ViewMode = "day" | "week";
 
@@ -211,10 +212,15 @@ export default function AgendaClient({
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-2 px-3 py-2 border-b bg-background flex-wrap shrink-0">
         {/* Inicio */}
-        <Link href="/inicio">
-          <Button variant="ghost" size="icon" className="h-8 w-8" title="Ir al inicio">
-            <LayoutDashboard className="h-4 w-4" />
-          </Button>
+        <Link href="/inicio" title="Ir al inicio">
+          <Image
+            src="/Med-Agenda_solo_logo.png"
+            alt="Med-Agenda"
+            width={32}
+            height={32}
+            className="h-7 w-auto"
+            priority
+          />
         </Link>
         <div className="h-4 w-px bg-border shrink-0" />
         {/* Navegación */}
