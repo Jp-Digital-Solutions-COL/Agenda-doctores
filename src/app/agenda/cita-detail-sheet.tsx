@@ -237,9 +237,9 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
           {!isBloqueada && (
             <div className="px-6 py-4 border-b">
               {tel || cita.pacientes?.email ? (
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   {tel && (
-                    <>
+                    <div className="flex gap-2">
                       <a
                         href={urlRecordatorio(tel, cita.pacientes!.nombre, cita.doctores.nombre, dateLabel, formatTime(dt))}
                         target="_blank"
@@ -260,14 +260,14 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
                         <WhatsAppIcon className="h-3.5 w-3.5 shrink-0" />
                         Escribir
                       </a>
-                    </>
+                    </div>
                   )}
                   {cita.pacientes?.email && (
                     <button
                       onClick={handleSendEmail}
                       disabled={emailLoading || emailSent}
                       className={buttonVariants({ variant: "outline", size: "sm" }) +
-                        ` flex-1 gap-1.5 justify-center ${
+                        ` w-full gap-1.5 justify-center ${
                           emailSent
                             ? "text-green-700 border-green-500/40"
                             : "text-blue-700 border-blue-500/40 hover:bg-blue-50 hover:text-blue-800"
