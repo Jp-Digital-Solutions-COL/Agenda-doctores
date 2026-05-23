@@ -274,7 +274,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
                         }`}
                     >
                       <Mail className="h-3.5 w-3.5 shrink-0" />
-                      {emailLoading ? "Enviando..." : emailSent ? "Enviado ✓" : "Enviar confirmación por correo"}
+                      {emailLoading ? "Enviando..." : emailSent ? "Enviado ✓" : "Recordatorio correo"}
                     </button>
                   )}
                 </div>
