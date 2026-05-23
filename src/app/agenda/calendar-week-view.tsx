@@ -73,6 +73,7 @@ export default function CalendarWeekView({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const clickCitaRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -93,6 +94,7 @@ export default function CalendarWeekView({
   function handleCitaPointerDown(e: React.PointerEvent, cita: CitaConRel, dayIdx: number) {
     if (e.button !== 0 || !onReschedule) return;
     e.stopPropagation();
+    clickCitaRef.current = cita.id;
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     const origTop = Math.max(0, topPx(new Date(cita.inicio)));
@@ -115,10 +117,14 @@ export default function CalendarWeekView({
     const colW = (rect.width - GUTTER_W) / 7;
     const targetDayIdx = Math.max(0, Math.min(6, Math.floor(x / colW)));
 
+    if (targetDayIdx !== drag.originalDayIdx || Math.abs(ghostTop - drag.originalTop) >= SNAP_PX / 2) {
+      clickCitaRef.current = null;
+    }
     setDrag((prev) => prev ? { ...prev, ghostTop, targetDayIdx } : null);
   }
 
   async function handlePointerUp() {
+    clickCitaRef.current = null;
     if (!drag || !onReschedule) { setDrag(null); return; }
     const { cita, ghostTop, originalTop, originalDayIdx, targetDayIdx } = drag;
     setDrag(null);
@@ -242,14 +248,11 @@ export default function CalendarWeekView({
                       data-cita-id={cita.id}
                       onPointerDown={(e) => handleCitaPointerDown(e, cita, dayIdx)}
                       onPointerUp={(e) => {
-                        if (!drag || drag.cita.id !== cita.id) return;
-                        const dayChanged = drag.targetDayIdx !== drag.originalDayIdx;
-                        const timeChanged = Math.abs(drag.ghostTop - drag.originalTop) >= SNAP_PX / 2;
-                        if (!dayChanged && !timeChanged) {
-                          e.stopPropagation();
-                          setDrag(null);
-                          onCitaClick(cita);
-                        }
+                        if (clickCitaRef.current !== cita.id) return;
+                        clickCitaRef.current = null;
+                        e.stopPropagation();
+                        setDrag(null);
+                        onCitaClick(cita);
                       }}
                       className={`absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm ${ec.bg} ${onReschedule ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
                       style={{

@@ -70,6 +70,8 @@ export default function CalendarDayView({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  // Ref updated synchronously on pointerdown — not subject to stale closure
+  const clickCitaRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -94,6 +96,7 @@ export default function CalendarDayView({
   ) {
     if (e.button !== 0 || !onReschedule) return;
     e.stopPropagation();
+    clickCitaRef.current = cita.id;       // set ref synchronously
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     const origTop = Math.max(0, topPx(new Date(cita.inicio)));
@@ -108,10 +111,12 @@ export default function CalendarDayView({
     const dur = durationMinutes(drag.cita.inicio, drag.cita.fin);
     const snapped = Math.round(rawTop / SNAP_PX) * SNAP_PX;
     const clamped = Math.max(0, Math.min(TOTAL_H - heightPx(dur), snapped));
+    if (Math.abs(clamped - drag.originalTop) >= SNAP_PX / 2) clickCitaRef.current = null;
     setDrag((prev) => prev ? { ...prev, ghostTop: clamped } : null);
   }
 
   async function handlePointerUp() {
+    clickCitaRef.current = null;
     if (!drag || !onReschedule) { setDrag(null); return; }
     const { cita, ghostTop, originalTop } = drag;
     setDrag(null);
@@ -243,12 +248,11 @@ export default function CalendarDayView({
                       data-cita-id={cita.id}
                       onPointerDown={(e) => handleCitaPointerDown(e, cita, idx)}
                       onPointerUp={(e) => {
-                        if (!drag || drag.cita.id !== cita.id) return;
-                        if (Math.abs(drag.ghostTop - drag.originalTop) < SNAP_PX / 2) {
-                          e.stopPropagation();
-                          setDrag(null);
-                          onCitaClick(cita);
-                        }
+                        if (clickCitaRef.current !== cita.id) return;
+                        clickCitaRef.current = null;
+                        e.stopPropagation();
+                        setDrag(null);
+                        onCitaClick(cita);
                       }}
                       className={`absolute left-1 right-1 rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm ${ec.bg} ${onReschedule ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
                       style={{
