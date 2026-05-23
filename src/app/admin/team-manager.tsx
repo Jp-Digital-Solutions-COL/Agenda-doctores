@@ -116,6 +116,7 @@ export default function TeamManager({ consultorios }: Props) {
   const [secEmail, setSecEmail] = useState("");
   const [secPassword, setSecPassword] = useState("");
   const [secLoading, setSecLoading] = useState(false);
+  const [secStep, setSecStep] = useState("");
   const [secError, setSecError] = useState("");
   const [secOpen, setSecOpen] = useState(false);
 
@@ -180,8 +181,10 @@ export default function TeamManager({ consultorios }: Props) {
     if (!consultorioId) return;
     setSecLoading(true);
     setSecError("");
+    setSecStep("Creando usuario...");
     const r = await createSecretaria(consultorioId, secEmail.trim(), secPassword, secNombre.trim());
     setSecLoading(false);
+    setSecStep("");
     if (r.error) {
       setSecError(r.error);
       return;
@@ -337,7 +340,10 @@ export default function TeamManager({ consultorios }: Props) {
                           disabled={secLoading}
                         >
                           {secLoading ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              {secStep}
+                            </>
                           ) : (
                             "Crear"
                           )}
