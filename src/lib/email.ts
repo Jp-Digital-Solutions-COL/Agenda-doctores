@@ -17,8 +17,10 @@ export async function sendConfirmacionCita(params: {
   fecha: string;
   hora: string;
   motivo: string | null;
+  secretariaWA: string | null;
+  secretariaEmail: string | null;
 }): Promise<{ error?: string }> {
-  const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo } = params;
+  const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo, secretariaWA, secretariaEmail } = params;
 
   const fotoSrc = fotoUrl ?? `${APP_URL}/Med-Agenda_solo_logo.png`;
   const isLogoFallback = !fotoUrl;
@@ -94,8 +96,30 @@ export async function sendConfirmacionCita(params: {
                   : ""}
               </table>
 
-              <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
-                Si necesita cancelar o reprogramar su cita, comuníquese con nosotros con anticipación.
+              <!-- Contacto -->
+              <p style="margin:24px 0 14px;font-size:13px;color:#374151;text-align:center;">
+                Si necesita cancelar o reprogramar su cita, contáctenos:
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  ${secretariaWA ? `<td style="padding-right:8px;">
+                    <a href="https://wa.me/${secretariaWA.replace(/\D/g, '')}"
+                      target="_blank"
+                      style="display:inline-block;padding:10px 20px;background:#25D366;color:#ffffff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                      WhatsApp
+                    </a>
+                  </td>` : ""}
+                  ${secretariaEmail ? `<td>
+                    <a href="mailto:${secretariaEmail}"
+                      style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#ffffff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                      Correo electrónico
+                    </a>
+                  </td>` : ""}
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0;font-size:11px;color:#9ca3af;text-align:center;font-style:italic;">
+                Este mensaje es un envío automático. Por favor no responda directamente a este correo, ya que no es un canal de comunicación con el especialista.
               </p>
             </td>
           </tr>

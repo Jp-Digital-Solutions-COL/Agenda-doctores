@@ -284,21 +284,28 @@ export async function sendConfirmacionEmail(params: {
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
 
-  const { data: doctorData } = await supabase
-    .from("doctores")
-    .select("foto_url, especialidad")
-    .eq("id", params.doctorId)
-    .single();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [doctorResult, profileResult] = await Promise.all([
+    supabase.from("doctores").select("foto_url, especialidad").eq("id", params.doctorId).single(),
+    user
+      ? supabase.from("profiles").select("telefono").eq("id", user.id).single()
+      : Promise.resolve({ data: null }),
+  ]);
 
   return sendConfirmacionCita({
     to: params.to,
     paciente: params.paciente,
     doctor: params.doctor,
-    especialidad: doctorData?.especialidad ?? null,
-    fotoUrl: doctorData?.foto_url ?? null,
+    especialidad: doctorResult.data?.especialidad ?? null,
+    fotoUrl: doctorResult.data?.foto_url ?? null,
     fecha: params.fecha,
     hora: params.hora,
     motivo: params.motivo,
+    secretariaWA: (profileResult.data as { telefono?: string | null } | null)?.telefono ?? null,
+    secretariaEmail: user?.email ?? null,
   });
 }
 
