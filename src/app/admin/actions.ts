@@ -47,7 +47,22 @@ export async function updateConsultorio(
   return { ok: true };
 }
 
-// ── Equipo ────────────────────────────────────────────────────────────
+export async function createConsultorio(
+  nombre: string
+): Promise<{ error?: string; id?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("consultorios")
+    .insert({ nombre: nombre.trim(), estado_suscripcion: "prueba" })
+    .select("id")
+    .single();
+
+  if (error) return { error: "No se pudo crear el consultorio." };
+  return { id: data.id };
+}
+
+// ── Tipos ────────────────────────────────────────────────────────────
 
 export type SecretariaItem = { id: string; email: string; nombre: string };
 export type DoctorItem = {
@@ -57,6 +72,95 @@ export type DoctorItem = {
   activo: boolean;
 };
 export type AsignacionItem = { secretaria_id: string; doctor_id: string };
+
+export type SecretariaGlobal = {
+  id: string;
+  nombre: string;
+  email: string;
+  consultorio_id: string | null;
+  consultorio_nombre: string | null;
+  activo: boolean;
+};
+
+export type DoctorAdmin = {
+  id: string;
+  nombre: string;
+  especialidad: string | null;
+  foto_url: string | null;
+  activo: boolean;
+  bloqueado_pago: boolean;
+  consultorio_id: string;
+};
+
+// ── Secretarias globales ──────────────────────────────────────────────
+
+export async function getAllSecretarias(): Promise<SecretariaGlobal[]> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, nombre, consultorio_id, activo, consultorios(nombre)")
+    .eq("rol", "secretaria")
+    .order("nombre");
+
+  if (!profiles?.length) return [];
+
+  const { data: usersData } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+  const emailMap = new Map(
+    (usersData?.users ?? []).map((u) => [u.id, u.email ?? ""])
+  );
+
+  return profiles.map((p) => {
+    const cons = p.consultorios as unknown as { nombre: string } | null;
+    return {
+      id: p.id,
+      nombre: (p.nombre as string) ?? "",
+      email: emailMap.get(p.id) ?? "",
+      consultorio_id: (p.consultorio_id as string | null) ?? null,
+      consultorio_nombre: cons?.nombre ?? null,
+      activo: (p.activo as boolean) ?? true,
+    };
+  });
+}
+
+export async function assignSecretariaToConsultorio(
+  secretariaId: string,
+  consultorioId: string | null
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ consultorio_id: consultorioId })
+    .eq("id", secretariaId);
+
+  if (error) return { error: "No se pudo asignar el consultorio." };
+  return {};
+}
+
+export async function toggleSecretariaActivo(
+  id: string,
+  activo: boolean
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ activo })
+    .eq("id", id);
+
+  if (error) return { error: "No se pudo actualizar el estado." };
+  return {};
+}
+
+// ── Secretarias por consultorio ───────────────────────────────────────
 
 export async function getSecretarias(
   consultorioId: string
@@ -84,7 +188,7 @@ export async function getSecretarias(
 }
 
 export async function createSecretaria(
-  consultorioId: string,
+  consultorioId: string | null,
   email: string,
   password: string,
   nombre: string
@@ -108,7 +212,13 @@ export async function createSecretaria(
   const { error: profileError } = await admin
     .from("profiles")
     .upsert(
-      { id: authData.user.id, consultorio_id: consultorioId, rol: "secretaria", nombre: nombre.trim() },
+      {
+        id: authData.user.id,
+        consultorio_id: consultorioId,
+        rol: "secretaria",
+        nombre: nombre.trim(),
+        activo: true,
+      },
       { onConflict: "id", ignoreDuplicates: false }
     );
 
@@ -119,6 +229,8 @@ export async function createSecretaria(
 
   return {};
 }
+
+// ── Doctores por consultorio (admin) ──────────────────────────────────
 
 export async function getDoctoresConsultorio(
   consultorioId: string
@@ -133,6 +245,29 @@ export async function getDoctoresConsultorio(
     .order("nombre");
 
   return (data ?? []) as DoctorItem[];
+}
+
+export async function getDoctoresAdmin(
+  consultorioId: string
+): Promise<DoctorAdmin[]> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { data } = await admin
+    .from("doctores")
+    .select("id, nombre, especialidad, foto_url, activo, bloqueado_pago, consultorio_id")
+    .eq("consultorio_id", consultorioId)
+    .order("nombre");
+
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    nombre: d.nombre,
+    especialidad: d.especialidad ?? null,
+    foto_url: d.foto_url ?? null,
+    activo: d.activo ?? true,
+    bloqueado_pago: d.bloqueado_pago ?? false,
+    consultorio_id: d.consultorio_id,
+  })) as DoctorAdmin[];
 }
 
 export async function createDoctor(
@@ -153,6 +288,62 @@ export async function createDoctor(
   if (error) return { error: "No se pudo crear el doctor." };
   return {};
 }
+
+export async function createDoctorAdmin(
+  consultorioId: string,
+  nombre: string,
+  especialidad: string | undefined,
+  foto_url: string | null
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("doctores").insert({
+    consultorio_id: consultorioId,
+    nombre: nombre.trim(),
+    especialidad: especialidad?.trim() || null,
+    foto_url,
+    activo: true,
+    bloqueado_pago: false,
+  });
+
+  if (error) return { error: "No se pudo crear el doctor." };
+  return {};
+}
+
+export async function toggleDoctorActivoAdmin(
+  id: string,
+  activo: boolean
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("doctores")
+    .update({ activo })
+    .eq("id", id);
+
+  if (error) return { error: "No se pudo actualizar el estado." };
+  return {};
+}
+
+export async function toggleDoctorBloqueadoPago(
+  id: string,
+  bloqueado: boolean
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("doctores")
+    .update({ bloqueado_pago: bloqueado })
+    .eq("id", id);
+
+  if (error) return { error: "No se pudo actualizar el bloqueo." };
+  return {};
+}
+
+// ── Asignaciones secretaria↔doctor ───────────────────────────────────
 
 export async function getAsignaciones(
   consultorioId: string

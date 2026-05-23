@@ -180,12 +180,22 @@ export default function AgendaClient({
     navigateTo(day);
   }
 
+  const activeDoctors = useMemo(
+    () => doctors.filter((d) => !d.bloqueado_pago),
+    [doctors]
+  );
+
+  const blockedDoctors = useMemo(
+    () => doctors.filter((d) => d.bloqueado_pago),
+    [doctors]
+  );
+
   const visibleDoctors = useMemo(
     () =>
       selectedDoctorId === "todos"
-        ? doctors
-        : doctors.filter((d) => d.id === selectedDoctorId),
-    [doctors, selectedDoctorId]
+        ? activeDoctors
+        : activeDoctors.filter((d) => d.id === selectedDoctorId),
+    [activeDoctors, selectedDoctorId]
   );
 
   const headerLabel =
@@ -325,12 +335,12 @@ export default function AgendaClient({
             <span data-slot="select-value" className="flex flex-1 text-left truncate">
               {selectedDoctorId === "todos"
                 ? "Todos los doctores"
-                : (doctors.find((d) => d.id === selectedDoctorId)?.nombre ?? "Todos los doctores")}
+                : (activeDoctors.find((d) => d.id === selectedDoctorId)?.nombre ?? "Todos los doctores")}
             </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos los doctores</SelectItem>
-            {doctors.map((d) => (
+            {activeDoctors.map((d) => (
               <SelectItem key={d.id} value={d.id}>
                 {d.nombre}
               </SelectItem>
@@ -382,6 +392,18 @@ export default function AgendaClient({
         </div>
       </div>
 
+      {/* ── Aviso de bloqueo por pago ── */}
+      {blockedDoctors.length > 0 && (
+        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-start gap-2.5">
+          <Ban className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800 leading-relaxed">
+            <span className="font-semibold">Acceso suspendido por falta de pago: </span>
+            {blockedDoctors.map((d) => d.nombre).join(", ")}.
+            {" "}Contacte al administrador para regularizar.
+          </div>
+        </div>
+      )}
+
       {/* ── Cuerpo del calendario ── */}
       <div className="flex-1 overflow-hidden relative">
         {isPending && (
@@ -424,7 +446,7 @@ export default function AgendaClient({
         key={dialogOpen ? "cita-open" : "cita-closed"}
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setDialogPreset(null); }}
-        doctors={doctors}
+        doctors={activeDoctors}
         pacientes={pacientes}
         defaultDoctorId={selectedDoctorId !== "todos" ? selectedDoctorId : undefined}
         defaultFecha={dialogPreset?.fecha}
@@ -436,7 +458,7 @@ export default function AgendaClient({
         key={bloqueoOpen ? "bloqueo-open" : "bloqueo-closed"}
         open={bloqueoOpen}
         onClose={() => { setBloqueoOpen(false); setBloqueoPreset(null); }}
-        doctors={doctors}
+        doctors={activeDoctors}
         defaultDoctorId={selectedDoctorId !== "todos" ? selectedDoctorId : undefined}
         defaultFecha={bloqueoPreset?.fecha}
         defaultHoraInicio={bloqueoPreset?.hora}

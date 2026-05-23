@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { updateConsultorio } from "./actions";
+import { useRouter } from "next/navigation";
+import { updateConsultorio, createConsultorio } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, TrendingUp, Building2, LayoutDashboard, Check, LogOut } from "lucide-react";
+import { Users, TrendingUp, Building2, LayoutDashboard, Check, LogOut, Plus, X } from "lucide-react";
 import Link from "next/link";
 import TeamManager from "./team-manager";
 import { signOut } from "./actions";
@@ -194,6 +195,27 @@ export default function AdminClient({
 }: {
   consultorios: ConsultorioAdmin[];
 }) {
+  const router = useRouter();
+  const [newConsultorioOpen, setNewConsultorioOpen] = useState(false);
+  const [newNombre, setNewNombre] = useState("");
+  const [newLoading, setNewLoading] = useState(false);
+  const [newError, setNewError] = useState("");
+
+  async function handleCreateConsultorio(e: React.FormEvent) {
+    e.preventDefault();
+    setNewLoading(true);
+    setNewError("");
+    const r = await createConsultorio(newNombre);
+    setNewLoading(false);
+    if (r.error) {
+      setNewError(r.error);
+    } else {
+      setNewNombre("");
+      setNewConsultorioOpen(false);
+      router.refresh();
+    }
+  }
+
   const activos = consultorios.filter(
     (c) => c.estado_suscripcion === "activo"
   ).length;
@@ -262,9 +284,45 @@ export default function AdminClient({
 
       {/* Lista */}
       <div className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Consultorios
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Consultorios
+          </h2>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 text-xs"
+            onClick={() => { setNewConsultorioOpen((v) => !v); setNewError(""); }}
+          >
+            {newConsultorioOpen ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            {newConsultorioOpen ? "Cancelar" : "Nuevo consultorio"}
+          </Button>
+        </div>
+
+        {newConsultorioOpen && (
+          <form
+            onSubmit={handleCreateConsultorio}
+            className="border rounded-lg p-3 space-y-2.5 bg-muted/30"
+          >
+            <div className="space-y-1">
+              <Label className="text-xs">Nombre del consultorio</Label>
+              <Input
+                required
+                autoFocus
+                placeholder="Clínica San Rafael"
+                value={newNombre}
+                onChange={(e) => setNewNombre(e.target.value)}
+                className="h-8 text-sm"
+                disabled={newLoading}
+              />
+            </div>
+            {newError && <p className="text-xs text-destructive">{newError}</p>}
+            <Button type="submit" size="sm" className="h-7 text-xs" disabled={newLoading || !newNombre.trim()}>
+              {newLoading ? "Creando..." : "Crear consultorio"}
+            </Button>
+          </form>
+        )}
+
         {consultorios.length === 0 ? (
           <Card className="p-10 text-center">
             <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />

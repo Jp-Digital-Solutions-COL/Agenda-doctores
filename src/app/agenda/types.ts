@@ -35,6 +35,7 @@ export type DoctorBasic = {
   nombre: string;
   especialidad: string | null;
   activo: boolean;
+  bloqueado_pago: boolean;
 };
 
 export type PacienteBasic = {
