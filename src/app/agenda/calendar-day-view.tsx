@@ -70,7 +70,6 @@ export default function CalendarDayView({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
-  const dragEndedRef = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -118,7 +117,6 @@ export default function CalendarDayView({
     setDrag(null);
 
     if (Math.abs(ghostTop - originalTop) < SNAP_PX / 2) return;
-    dragEndedRef.current = true;
 
     const dur = durationMinutes(cita.inicio, cita.fin);
     const { h, m } = topToTime(ghostTop);
@@ -214,6 +212,7 @@ export default function CalendarDayView({
                 style={{ height: TOTAL_H }}
                 onClick={(e) => {
                   if (!onSlotClick || drag) return;
+                  if ((e.target as HTMLElement).closest('[data-cita-id]')) return;
                   onSlotClick(date, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                 }}
               >
@@ -241,11 +240,15 @@ export default function CalendarDayView({
                   return (
                     <button
                       key={cita.id}
+                      data-cita-id={cita.id}
                       onPointerDown={(e) => handleCitaPointerDown(e, cita, idx)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (dragEndedRef.current) { dragEndedRef.current = false; return; }
-                        onCitaClick(cita);
+                      onPointerUp={(e) => {
+                        if (!drag || drag.cita.id !== cita.id) return;
+                        if (Math.abs(drag.ghostTop - drag.originalTop) < SNAP_PX / 2) {
+                          e.stopPropagation();
+                          setDrag(null);
+                          onCitaClick(cita);
+                        }
                       }}
                       className={`absolute left-1 right-1 rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm ${ec.bg} ${onReschedule ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
                       style={{

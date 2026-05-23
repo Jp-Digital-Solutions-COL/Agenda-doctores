@@ -73,7 +73,6 @@ export default function CalendarWeekView({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
-  const dragEndedRef = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -127,7 +126,6 @@ export default function CalendarWeekView({
     const dayChanged = targetDayIdx !== originalDayIdx;
     const timeChanged = Math.abs(ghostTop - originalTop) >= SNAP_PX / 2;
     if (!dayChanged && !timeChanged) return;
-    dragEndedRef.current = true;
 
     const dur = durationMinutes(cita.inicio, cita.fin);
     const { h, m } = topToTime(ghostTop);
@@ -217,6 +215,7 @@ export default function CalendarWeekView({
                 style={{ height: TOTAL_H }}
                 onClick={(e) => {
                   if (!onSlotClick || drag) return;
+                  if ((e.target as HTMLElement).closest('[data-cita-id]')) return;
                   onSlotClick(day, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                 }}
               >
@@ -240,11 +239,17 @@ export default function CalendarWeekView({
                   return (
                     <button
                       key={cita.id}
+                      data-cita-id={cita.id}
                       onPointerDown={(e) => handleCitaPointerDown(e, cita, dayIdx)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (dragEndedRef.current) { dragEndedRef.current = false; return; }
-                        onCitaClick(cita);
+                      onPointerUp={(e) => {
+                        if (!drag || drag.cita.id !== cita.id) return;
+                        const dayChanged = drag.targetDayIdx !== drag.originalDayIdx;
+                        const timeChanged = Math.abs(drag.ghostTop - drag.originalTop) >= SNAP_PX / 2;
+                        if (!dayChanged && !timeChanged) {
+                          e.stopPropagation();
+                          setDrag(null);
+                          onCitaClick(cita);
+                        }
                       }}
                       className={`absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm ${ec.bg} ${onReschedule ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
                       style={{
