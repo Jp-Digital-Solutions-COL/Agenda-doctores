@@ -45,9 +45,9 @@ export default function LoginForm() {
       <Image
         src="/Med-Agenda_sin_fondo.png"
         alt="Med-Agenda"
-        width={420}
-        height={165}
-        className="h-44 w-auto"
+        width={840}
+        height={330}
+        className="h-[330px] w-auto max-w-full"
         priority
       />
       <Card className="w-full">

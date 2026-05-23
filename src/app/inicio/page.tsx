@@ -182,7 +182,8 @@ export default async function InicioPage() {
               alt="Med-Agenda"
               width={140}
               height={32}
-              className="h-7 w-auto"
+              className="h-10 w-auto"
+              unoptimized
               priority
             />
           <div className="h-4 w-px bg-border" />

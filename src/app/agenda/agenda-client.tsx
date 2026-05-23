@@ -218,7 +218,8 @@ export default function AgendaClient({
             alt="Med-Agenda"
             width={32}
             height={32}
-            className="h-7 w-auto"
+            className="h-12 w-auto"
+            unoptimized
             priority
           />
         </Link>
@@ -412,6 +413,17 @@ export default function AgendaClient({
 
       {/* ── Cuerpo del calendario ── */}
       <div className="flex-1 overflow-hidden relative">
+        {/* Marca de agua */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <Image
+            src="/Med-Agenda_solo_logo.png"
+            alt=""
+            width={420}
+            height={420}
+            className="w-[680px] h-auto opacity-[0.08]"
+          />
+        </div>
+
         {isPending && (
           <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center">
             <div className="bg-background/75 backdrop-blur-[2px] rounded-full px-3 py-1.5 flex items-center gap-2 shadow text-xs text-muted-foreground">

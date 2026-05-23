@@ -58,7 +58,8 @@ export default function PacientesClient({ pacientes }: Props) {
             alt="Med-Agenda"
             width={140}
             height={32}
-            className="h-7 w-auto"
+            className="h-10 w-auto"
+            unoptimized
             priority
           />
         </Link>

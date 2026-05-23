@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { CitaConRel, DoctorBasic, EstadoCita, PacienteBasic } from "./types";
+import { sendConfirmacionCita } from "@/lib/email";
 
 export async function getDoctoresActivos(): Promise<DoctorBasic[]> {
   const supabase = await createClient();
@@ -270,6 +271,35 @@ export async function bloquearHoras(input: {
   if (error) return { error: error.message };
   revalidatePath("/agenda");
   return {};
+}
+
+export async function sendConfirmacionEmail(params: {
+  doctorId: string;
+  to: string;
+  paciente: string;
+  doctor: string;
+  fecha: string;
+  hora: string;
+  motivo: string | null;
+}): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  const { data: doctorData } = await supabase
+    .from("doctores")
+    .select("foto_url, especialidad")
+    .eq("id", params.doctorId)
+    .single();
+
+  return sendConfirmacionCita({
+    to: params.to,
+    paciente: params.paciente,
+    doctor: params.doctor,
+    especialidad: doctorData?.especialidad ?? null,
+    fotoUrl: doctorData?.foto_url ?? null,
+    fecha: params.fecha,
+    hora: params.hora,
+    motivo: params.motivo,
+  });
 }
 
 export async function createPaciente(input: {

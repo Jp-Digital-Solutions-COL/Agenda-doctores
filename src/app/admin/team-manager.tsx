@@ -101,6 +101,7 @@ function SecretariaRow({
   onToggleActivo,
   onAssignConsultorio,
   onToggleDoctor,
+  onOpen,
 }: {
   sec: SecretariaGlobal;
   doctors: DoctorItem[];
@@ -109,6 +110,7 @@ function SecretariaRow({
   onToggleActivo: (id: string, activo: boolean) => void;
   onAssignConsultorio: (id: string, consultorioId: string | null) => void;
   onToggleDoctor: (secId: string, docId: string, asignar: boolean) => void;
+  onOpen: (consultorioId: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [savingActivo, setSavingActivo] = useState(false);
@@ -133,7 +135,11 @@ function SecretariaRow({
         <button
           type="button"
           className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            const next = !open;
+            setOpen(next);
+            if (next) onOpen(sec.consultorio_id);
+          }}
           title="Ver asignaciones"
         >
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -486,6 +492,9 @@ function SecretariasTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) 
                 onToggleActivo={handleToggleActivo}
                 onAssignConsultorio={handleAssignConsultorio}
                 onToggleDoctor={handleToggleDoctor}
+                onOpen={(cid) => {
+                  if (cid && cid !== selectedConsultorio) loadDoctorsForConsultorio(cid);
+                }}
               />
             );
           })}

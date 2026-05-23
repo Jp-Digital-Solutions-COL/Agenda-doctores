@@ -278,14 +278,32 @@ export async function createDoctor(
   await assertSuperadmin();
   const admin = createAdminClient();
 
-  const { error } = await admin.from("doctores").insert({
-    consultorio_id: consultorioId,
-    nombre: nombre.trim(),
-    especialidad: especialidad?.trim() || null,
-    activo: true,
-  });
+  const { data: newDoctor, error } = await admin
+    .from("doctores")
+    .insert({
+      consultorio_id: consultorioId,
+      nombre: nombre.trim(),
+      especialidad: especialidad?.trim() || null,
+      activo: true,
+    })
+    .select("id")
+    .single();
 
-  if (error) return { error: "No se pudo crear el doctor." };
+  if (error) return { error: `No se pudo crear el doctor: ${error.message}` };
+
+  // Auto-assign to every secretaria in this consultorio
+  const { data: secretarias } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("consultorio_id", consultorioId)
+    .eq("rol", "secretaria");
+
+  if (secretarias?.length) {
+    await admin.from("secretaria_doctores").upsert(
+      secretarias.map((s) => ({ secretaria_id: s.id, doctor_id: newDoctor.id }))
+    );
+  }
+
   return {};
 }
 
@@ -298,16 +316,34 @@ export async function createDoctorAdmin(
   await assertSuperadmin();
   const admin = createAdminClient();
 
-  const { error } = await admin.from("doctores").insert({
-    consultorio_id: consultorioId,
-    nombre: nombre.trim(),
-    especialidad: especialidad?.trim() || null,
-    foto_url,
-    activo: true,
-    bloqueado_pago: false,
-  });
+  const { data: newDoctor, error } = await admin
+    .from("doctores")
+    .insert({
+      consultorio_id: consultorioId,
+      nombre: nombre.trim(),
+      especialidad: especialidad?.trim() || null,
+      foto_url,
+      activo: true,
+      bloqueado_pago: false,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: `No se pudo crear el doctor: ${error.message}` };
+
+  // Auto-assign to every secretaria in this consultorio
+  const { data: secretarias } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("consultorio_id", consultorioId)
+    .eq("rol", "secretaria");
+
+  if (secretarias?.length) {
+    await admin.from("secretaria_doctores").upsert(
+      secretarias.map((s) => ({ secretaria_id: s.id, doctor_id: newDoctor.id }))
+    );
+  }
+
   return {};
 }
 
@@ -380,7 +416,7 @@ export async function toggleAsignacion(
     const { error } = await admin
       .from("secretaria_doctores")
       .upsert({ secretaria_id: secretariaId, doctor_id: doctorId });
-    if (error) return { error: "No se pudo asignar." };
+    if (error) return { error: `No se pudo asignar: ${error.message}` };
   } else {
     const { error } = await admin
       .from("secretaria_doctores")
