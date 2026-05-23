@@ -332,19 +332,31 @@ function SecretariaRow({
               <div className="space-y-1">
                 <Label className="text-xs">Teléfono (opcional)</Label>
                 <div className="flex">
-                  <select
+                  <Select
                     value={editPhone.code}
-                    onChange={(e) => setEditPhone((p) => ({ ...p, code: e.target.value as CountryCode }))}
+                    onValueChange={(v) => v && setEditPhone((p) => ({ ...p, code: v as CountryCode }))}
                     disabled={editLoading}
-                    className="h-7 text-xs border border-input rounded-l-md bg-background px-1.5 pr-5 shrink-0 focus:outline-none focus:ring-1 focus:ring-ring"
-                    style={{ appearance: "none" }}
                   >
-                    {COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-7 text-xs rounded-r-none border-r-0 w-[88px] shrink-0 px-2 gap-1">
+                      <span data-slot="select-value" className="flex items-center gap-1">
+                        <span className="text-base leading-none">
+                          {COUNTRIES.find((c) => c.code === editPhone.code)?.flag}
+                        </span>
+                        <span>{editPhone.code}</span>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code} className="text-xs">
+                          <span className="flex items-center gap-2">
+                            <span className="text-base leading-none">{c.flag}</span>
+                            <span className="font-mono">{c.code}</span>
+                            <span className="text-muted-foreground">{c.name}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
                     type="tel"
                     placeholder="3001234567"
