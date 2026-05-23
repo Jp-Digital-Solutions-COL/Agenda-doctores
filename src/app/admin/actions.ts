@@ -307,7 +307,7 @@ export async function createDoctorAdmin(
     bloqueado_pago: false,
   });
 
-  if (error) return { error: "No se pudo crear el doctor." };
+  if (error) return { error: `No se pudo crear el doctor: ${error.message}` };
   return {};
 }
 
