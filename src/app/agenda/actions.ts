@@ -162,6 +162,8 @@ export async function createCita(input: {
     .single();
   if (!profile?.consultorio_id) return { error: "Sin consultorio." };
 
+  const token = crypto.randomUUID();
+
   const { data: newCita, error } = await supabase
     .from("citas")
     .insert({
@@ -173,6 +175,7 @@ export async function createCita(input: {
       motivo: input.motivo.trim() || null,
       estado: "programada",
       creado_por: user.id,
+      token_confirmacion: token,
     })
     .select("id")
     .single();
@@ -212,6 +215,7 @@ export async function createCita(input: {
         secretariaEmail: user.email ?? null,
         titulo: "Cita agendada",
         intro: "le informamos que se ha agendado su cita con los siguientes detalles",
+        tokenConfirmacion: token,
       });
 
       if (emailResult.error) {
@@ -335,6 +339,7 @@ export async function sendConfirmacionEmail(params: {
   fecha: string;
   hora: string;
   motivo: string | null;
+  token?: string | null;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
 
@@ -360,6 +365,7 @@ export async function sendConfirmacionEmail(params: {
     motivo: params.motivo,
     secretariaWA: (profileResult.data as { telefono?: string | null } | null)?.telefono ?? null,
     secretariaEmail: user?.email ?? null,
+    tokenConfirmacion: params.token ?? null,
   });
 }
 

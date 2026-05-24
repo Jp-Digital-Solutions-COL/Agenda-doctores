@@ -17,6 +17,7 @@ export type Cita = {
   motivo: string | null;
   creado_por: string;
   creado_en: string;
+  token_confirmacion: string | null;
 };
 
 export type CitaConRel = Cita & {

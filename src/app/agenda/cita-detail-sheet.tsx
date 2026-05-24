@@ -173,6 +173,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
       fecha: dateLabel,
       hora: formatTime(dt),
       motivo: c.motivo ?? null,
+      token: c.token_confirmacion ?? null,
     });
     setEmailLoading(false);
     if (r.error) setEmailError(r.error);

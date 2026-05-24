@@ -21,10 +21,12 @@ export async function sendConfirmacionCita(params: {
   secretariaEmail: string | null;
   titulo?: string;
   intro?: string;
+  tokenConfirmacion?: string | null;
 }): Promise<{ error?: string }> {
   const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo, secretariaWA, secretariaEmail } = params;
   const titulo = params.titulo ?? "Recordatorio de cita";
   const intro = params.intro ?? "le recordamos los detalles de su próxima cita";
+  const { tokenConfirmacion } = params;
 
   const fotoSrc = fotoUrl ?? `${APP_URL}/Med-Agenda_solo_logo.png`;
   const isLogoFallback = !fotoUrl;
@@ -99,6 +101,16 @@ export async function sendConfirmacionCita(params: {
                 </tr>`
                   : ""}
               </table>
+
+              <!-- Botón confirmar -->
+              ${tokenConfirmacion ? `
+              <div style="text-align:center;margin:28px 0 8px;">
+                <a href="${APP_URL}/confirmar/${tokenConfirmacion}"
+                  style="display:inline-block;padding:14px 36px;background:#0D9488;color:#ffffff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;letter-spacing:0.01em;">
+                  ✓ Confirmar mi cita
+                </a>
+              </div>
+              ` : ""}
 
               <!-- Contacto -->
               <p style="margin:24px 0 14px;font-size:13px;color:#374151;text-align:center;">
