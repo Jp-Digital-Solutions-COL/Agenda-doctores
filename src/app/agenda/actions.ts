@@ -148,8 +148,6 @@ export async function createCita(input: {
   inicioISO: string;
   finISO: string;
   motivo: string;
-  fechaLabel: string;
-  horaLabel: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
@@ -192,14 +190,23 @@ export async function createCita(input: {
 
     const pacienteEmail = pacienteResult.data?.email;
     if (pacienteEmail) {
+      const inicio = new Date(input.inicioISO);
+      const tz = "America/Bogota";
+      const fechaLabel = inicio.toLocaleDateString("es-CO", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: tz,
+      });
+      const horaLabel = inicio.toLocaleTimeString("es-CO", {
+        hour: "2-digit", minute: "2-digit", hour12: false, timeZone: tz,
+      });
+
       const emailResult = await sendConfirmacionCita({
         to: pacienteEmail,
         paciente: pacienteResult.data?.nombre ?? "",
         doctor: doctorResult.data?.nombre ?? "",
         especialidad: doctorResult.data?.especialidad ?? null,
         fotoUrl: doctorResult.data?.foto_url ?? null,
-        fecha: input.fechaLabel,
-        hora: input.horaLabel,
+        fecha: fechaLabel,
+        hora: horaLabel,
         motivo: input.motivo.trim() || null,
         secretariaWA: (perfilResult.data as { telefono?: string | null } | null)?.telefono ?? null,
         secretariaEmail: user.email ?? null,

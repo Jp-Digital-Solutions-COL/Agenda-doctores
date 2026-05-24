@@ -114,10 +114,6 @@ export default function NuevaCitaDialog({
       inicioISO: inicioDate.toISOString(),
       finISO: new Date(inicioDate.getTime() + duracion * 60000).toISOString(),
       motivo,
-      fechaLabel: inicioDate.toLocaleDateString("es-CO", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric",
-      }),
-      horaLabel: hora,
     });
     if (result.error) {
       setError(result.error);
