@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { startOfWeek, endOfWeek, addDays, toDateStr } from "@/app/agenda/utils";
 import { ESTADO_CONFIG } from "@/app/agenda/types";
-import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut, Zap } from "lucide-react";
+import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut, Zap, Plus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -222,8 +222,20 @@ export default async function InicioPage() {
           </p>
         </div>
 
-        {/* ── Acción rápida ────────────────────────────────────── */}
-        <div>
+        {/* ── Acciones rápidas ─────────────────────────────────── */}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/agenda">
+            <Button className="gap-2 shadow-sm">
+              <Plus className="h-4 w-4" />
+              Agendar cita
+            </Button>
+          </Link>
+          <Link href="/pacientes">
+            <Button variant="outline" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Crear paciente
+            </Button>
+          </Link>
           <Link href="/adelantar">
             <Button className="gap-2 bg-teal-600 hover:bg-teal-700 text-white shadow-sm">
               <Zap className="h-4 w-4" />
