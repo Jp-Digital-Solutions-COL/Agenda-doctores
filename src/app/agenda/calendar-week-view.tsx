@@ -65,31 +65,50 @@ function topToTime(top: number): { h: number; m: number } {
   return { h: Math.floor(clamped / 60), m: clamped % 60 };
 }
 
-function computeOverlapLayout(
-  citas: CitaConRel[]
+/**
+ * Asigna a cada cita su posición horizontal en la columna del día.
+ * - Columnas fijas por doctor (orden de `doctors`): el doctor 0 siempre a la izquierda, el 1 a la derecha, etc.
+ * - Si una cita no se solapa con ninguna otra → ancho completo (leftPct 0, widthPct 100).
+ */
+function computeDoctorLayout(
+  citas: CitaConRel[],
+  doctors: DoctorBasic[]
 ): Map<string, { leftPct: number; widthPct: number }> {
-  if (citas.length <= 1) {
-    return new Map(citas.map((c) => [c.id, { leftPct: 0, widthPct: 100 }]));
-  }
-  const sorted = [...citas].sort(
-    (a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime()
-  );
-  const slotEnds: number[] = [];
-  const citaSlot = new Map<string, number>();
-  for (const cita of sorted) {
+  if (citas.length === 0) return new Map();
+
+  // Doctores visibles (en orden) que tienen al menos una cita este día
+  const activeDoctorIds = doctors
+    .map((d) => d.id)
+    .filter((id) => citas.some((c) => c.doctor_id === id));
+  const doctorCol = new Map(activeDoctorIds.map((id, i) => [id, i]));
+  const totalCols = activeDoctorIds.length;
+
+  const result = new Map<string, { leftPct: number; widthPct: number }>();
+
+  for (const cita of citas) {
     const start = new Date(cita.inicio).getTime();
     const end = new Date(cita.fin).getTime();
-    let slot = slotEnds.findIndex((t) => t <= start);
-    if (slot === -1) { slot = slotEnds.length; slotEnds.push(end); }
-    else { slotEnds[slot] = end; }
-    citaSlot.set(cita.id, slot);
+
+    // ¿Se solapa con alguna otra cita del día?
+    const hasOverlap = citas.some((other) => {
+      if (other.id === cita.id) return false;
+      const oStart = new Date(other.inicio).getTime();
+      const oEnd = new Date(other.fin).getTime();
+      return start < oEnd && end > oStart;
+    });
+
+    if (!hasOverlap || totalCols <= 1) {
+      // Sin solapamiento → ancho completo
+      result.set(cita.id, { leftPct: 0, widthPct: 100 });
+    } else {
+      const col = doctorCol.get(cita.doctor_id) ?? 0;
+      result.set(cita.id, {
+        leftPct: (col / totalCols) * 100,
+        widthPct: (1 / totalCols) * 100,
+      });
+    }
   }
-  const totalSlots = slotEnds.length;
-  const result = new Map<string, { leftPct: number; widthPct: number }>();
-  for (const cita of citas) {
-    const slot = citaSlot.get(cita.id) ?? 0;
-    result.set(cita.id, { leftPct: (slot / totalSlots) * 100, widthPct: (1 / totalSlots) * 100 });
-  }
+
   return result;
 }
 
@@ -302,7 +321,7 @@ export default function CalendarWeekView({
                 .sort((a, b) => a.inicio.localeCompare(b.inicio));
 
               const colGhost = ghost?.targetDayIdx === dayIdx ? ghost : null;
-              const layout = computeOverlapLayout(dayCitas);
+              const layout = computeDoctorLayout(dayCitas, doctors);
 
               return (
                 <div
