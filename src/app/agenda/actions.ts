@@ -162,19 +162,70 @@ export async function createCita(input: {
     .single();
   if (!profile?.consultorio_id) return { error: "Sin consultorio." };
 
-  const { error } = await supabase.from("citas").insert({
-    consultorio_id: profile.consultorio_id,
-    doctor_id: input.doctorId,
-    paciente_id: input.pacienteId,
-    inicio: input.inicioISO,
-    fin: input.finISO,
-    motivo: input.motivo.trim() || null,
-    estado: "programada",
-    creado_por: user.id,
-  });
+  const { data: newCita, error } = await supabase
+    .from("citas")
+    .insert({
+      consultorio_id: profile.consultorio_id,
+      doctor_id: input.doctorId,
+      paciente_id: input.pacienteId,
+      inicio: input.inicioISO,
+      fin: input.finISO,
+      motivo: input.motivo.trim() || null,
+      estado: "programada",
+      creado_por: user.id,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: "No se pudo crear la cita." };
   revalidatePath("/agenda");
+
+  // Enviar correo de confirmación (no bloquea la creación si falla)
+  try {
+    const [pacienteResult, doctorResult, perfilResult] = await Promise.all([
+      supabase.from("pacientes").select("nombre, email").eq("id", input.pacienteId).single(),
+      supabase.from("doctores").select("nombre, foto_url, especialidad").eq("id", input.doctorId).single(),
+      supabase.from("profiles").select("telefono").eq("id", user.id).single(),
+    ]);
+
+    const pacienteEmail = pacienteResult.data?.email;
+    if (pacienteEmail) {
+      const inicio = new Date(input.inicioISO);
+      const fecha = inicio.toLocaleDateString("es-CO", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
+      });
+      const hora = inicio.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+
+      const emailResult = await sendConfirmacionCita({
+        to: pacienteEmail,
+        paciente: pacienteResult.data?.nombre ?? "",
+        doctor: doctorResult.data?.nombre ?? "",
+        especialidad: doctorResult.data?.especialidad ?? null,
+        fotoUrl: doctorResult.data?.foto_url ?? null,
+        fecha,
+        hora,
+        motivo: input.motivo.trim() || null,
+        secretariaWA: (perfilResult.data as { telefono?: string | null } | null)?.telefono ?? null,
+        secretariaEmail: user.email ?? null,
+        titulo: "Cita agendada",
+        intro: "le informamos que se ha agendado su cita con los siguientes detalles",
+      });
+
+      if (emailResult.error) {
+        console.error("[createCita] Email error:", emailResult.error);
+      }
+
+      await supabase.from("recordatorios").insert({
+        cita_id: newCita.id,
+        tipo: "email",
+        estado: emailResult.error ? "error" : "enviado",
+        enviado_en: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error("[createCita] Error al enviar correo de confirmación:", e);
+  }
+
   return {};
 }
 

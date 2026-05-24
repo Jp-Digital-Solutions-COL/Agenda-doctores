@@ -19,8 +19,12 @@ export async function sendConfirmacionCita(params: {
   motivo: string | null;
   secretariaWA: string | null;
   secretariaEmail: string | null;
+  titulo?: string;
+  intro?: string;
 }): Promise<{ error?: string }> {
   const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo, secretariaWA, secretariaEmail } = params;
+  const titulo = params.titulo ?? "Recordatorio de cita";
+  const intro = params.intro ?? "le recordamos los detalles de su próxima cita";
 
   const fotoSrc = fotoUrl ?? `${APP_URL}/Med-Agenda_solo_logo.png`;
   const isLogoFallback = !fotoUrl;
@@ -30,7 +34,7 @@ export async function sendConfirmacionCita(params: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recordatorio de cita</title>
+  <title>${titulo}</title>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Helvetica Neue',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
@@ -40,7 +44,7 @@ export async function sendConfirmacionCita(params: {
 
           <!-- Header -->
           <tr>
-            <td style="background:#1d4ed8;padding:24px 32px;text-align:center;">
+            <td style="background:#0D9488;padding:24px 32px;text-align:center;">
               <img src="${APP_URL}/Med-Agenda_sin_slogan.png" alt="Med-Agenda" height="36"
                 style="height:36px;width:auto;display:inline-block;" />
             </td>
@@ -65,10 +69,10 @@ export async function sendConfirmacionCita(params: {
             <td style="padding:24px 32px 32px;">
 
               <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;text-align:center;">
-                Recordatorio de cita
+                ${titulo}
               </h2>
               <p style="margin:0 0 24px;font-size:15px;color:#6b7280;text-align:center;">
-                Hola <strong style="color:#374151;">${paciente}</strong>, le recordamos los detalles de su próxima cita.
+                Hola <strong style="color:#374151;">${paciente}</strong>, ${intro}.
               </p>
 
               <!-- Detalles -->
@@ -112,7 +116,7 @@ export async function sendConfirmacionCita(params: {
                   </td>` : ""}
                   ${secretariaEmail ? `<td>
                     <a href="mailto:${secretariaEmail}"
-                      style="display:inline-block;padding:10px 18px;background:#1d4ed8;color:#ffffff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                      style="display:inline-block;padding:10px 18px;background:#0D9488;color:#ffffff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
                       <img src="${APP_URL}/icon-mail.svg" width="15" height="15" alt="" style="display:inline-block;vertical-align:middle;margin-right:6px;margin-top:-1px;" />
                       <span style="vertical-align:middle;">Correo electrónico</span>
                     </a>
@@ -145,7 +149,7 @@ export async function sendConfirmacionCita(params: {
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: `Recordatorio de cita – Dr. ${doctor}`,
+    subject: `${titulo} – Dr. ${doctor}`,
     html,
   });
 
