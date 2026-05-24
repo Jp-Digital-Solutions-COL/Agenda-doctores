@@ -66,6 +66,52 @@ function topToTime(top: number): { h: number; m: number } {
   return { h: Math.floor(clamped / 60), m: clamped % 60 };
 }
 
+/**
+ * Greedy overlap layout — assigns each cita to a visual sub-column so
+ * overlapping appointments appear side by side instead of on top of each other.
+ * Returns { leftPct, widthPct } as 0-100 percentages of the doctor column.
+ */
+function computeOverlapLayout(
+  citas: CitaConRel[]
+): Map<string, { leftPct: number; widthPct: number }> {
+  if (citas.length <= 1) {
+    return new Map(citas.map((c) => [c.id, { leftPct: 0, widthPct: 100 }]));
+  }
+
+  const sorted = [...citas].sort(
+    (a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime()
+  );
+
+  // Track end-time of the last cita placed in each sub-column
+  const slotEnds: number[] = [];
+  const citaSlot = new Map<string, number>();
+
+  for (const cita of sorted) {
+    const start = new Date(cita.inicio).getTime();
+    const end = new Date(cita.fin).getTime();
+    // Reuse the first slot that has already ended
+    let slot = slotEnds.findIndex((t) => t <= start);
+    if (slot === -1) {
+      slot = slotEnds.length;
+      slotEnds.push(end);
+    } else {
+      slotEnds[slot] = end;
+    }
+    citaSlot.set(cita.id, slot);
+  }
+
+  const totalSlots = slotEnds.length;
+  const result = new Map<string, { leftPct: number; widthPct: number }>();
+  for (const cita of citas) {
+    const slot = citaSlot.get(cita.id) ?? 0;
+    result.set(cita.id, {
+      leftPct: (slot / totalSlots) * 100,
+      widthPct: (1 / totalSlots) * 100,
+    });
+  }
+  return result;
+}
+
 interface GhostState {
   citaId: string;
   top: number;
@@ -255,6 +301,7 @@ export default function CalendarDayView({
               const doctorIdx = allDoctors.findIndex((d) => d.id === doc.id);
               const color = doctorColor(doctorIdx >= 0 ? doctorIdx : idx);
               const colGhost = ghost?.colIdx === idx ? ghost : null;
+              const layout = computeOverlapLayout(docCitas);
 
               return (
                 <div
@@ -287,6 +334,7 @@ export default function CalendarDayView({
                     const top = topPx(dt);
                     const h = heightPx(dur);
                     if (top < -h || top > TOTAL_H) return null;
+                    const { leftPct, widthPct } = layout.get(cita.id) ?? { leftPct: 0, widthPct: 100 };
 
                     return (
                       <CitaBlock
@@ -298,6 +346,8 @@ export default function CalendarDayView({
                         color={color}
                         colIdx={idx}
                         isDraggingThis={ghost?.citaId === cita.id}
+                        leftPct={leftPct}
+                        widthPct={widthPct}
                       />
                     );
                   })}
@@ -319,6 +369,8 @@ function CitaBlock({
   color,
   colIdx,
   isDraggingThis,
+  leftPct,
+  widthPct,
 }: {
   cita: CitaConRel;
   top: number;
@@ -327,6 +379,8 @@ function CitaBlock({
   color: string;
   colIdx: number;
   isDraggingThis: boolean;
+  leftPct: number;
+  widthPct: number;
 }) {
   const isBloqueada = cita.estado === "bloqueada";
   const ec = ESTADO_CONFIG[cita.estado];
@@ -343,10 +397,12 @@ function CitaBlock({
       data-cita-id={cita.id}
       {...listeners}
       {...attributes}
-      className={`absolute left-1 right-1 rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm cursor-grab active:cursor-grabbing ${ec.bg}`}
+      className={`absolute rounded text-left overflow-hidden transition-opacity hover:brightness-95 hover:shadow-sm cursor-grab active:cursor-grabbing ${ec.bg}`}
       style={{
         top: Math.max(0, top),
         height: h,
+        left: `calc(${leftPct}% + 2px)`,
+        width: `calc(${widthPct}% - 4px)`,
         borderLeft: isBloqueada ? `3px solid #9ca3af` : `3px solid ${color}`,
         backgroundImage: isBloqueada
           ? "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px)"
