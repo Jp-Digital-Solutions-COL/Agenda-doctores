@@ -238,7 +238,7 @@ export default function AgendaClient({
             title={viewMode === "day" ? "Día anterior" : "Semana anterior"}
             aria-label={viewMode === "day" ? "Día anterior" : "Semana anterior"}
             onClick={() =>
-              navigateTo(addDays(currentDate, viewMode === "day" ? -1 : -7))
+              navigateTo(addDays(viewMode === "day" ? currentDate : weekStart, viewMode === "day" ? -1 : -7))
             }
           >
             <ChevronLeft className="h-4 w-4" />
@@ -259,7 +259,7 @@ export default function AgendaClient({
             title={viewMode === "day" ? "Día siguiente" : "Semana siguiente"}
             aria-label={viewMode === "day" ? "Día siguiente" : "Semana siguiente"}
             onClick={() =>
-              navigateTo(addDays(currentDate, viewMode === "day" ? 1 : 7))
+              navigateTo(addDays(viewMode === "day" ? currentDate : weekStart, viewMode === "day" ? 1 : 7))
             }
           >
             <ChevronRight className="h-4 w-4" />
@@ -381,7 +381,7 @@ export default function AgendaClient({
             variant={viewMode === "day" ? "secondary" : "ghost"}
             size="sm"
             className="h-8 rounded-none gap-1.5"
-            onClick={() => setViewMode("day")}
+            onClick={() => { navigateTo(todayDate); setViewMode("day"); }}
           >
             <Calendar className="h-3.5 w-3.5" />
             Día
