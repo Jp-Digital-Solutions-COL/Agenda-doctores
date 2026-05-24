@@ -168,9 +168,14 @@ export default function AdelatarClient({ doctors }: Props) {
       : esManana
         ? `mañana ${fechaLarga}`
         : `el ${fechaLarga}`;
+    const doctorLabel = doctorSeleccionado
+      ? doctorSeleccionado.titulo
+        ? `${doctorSeleccionado.titulo} ${doctorSeleccionado.nombre}`
+        : `el/la doctor(a) ${doctorSeleccionado.nombre}`
+      : "el doctor";
     const mensaje =
       `Hola ${pacienteNombre}, le contactamos del consultorio. ` +
-      `Tenemos disponible un espacio con ${doctorSeleccionado?.nombre ?? "el doctor"} ` +
+      `Tenemos disponible un espacio con ${doctorLabel} ` +
       `${prefijo} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
     return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
   }

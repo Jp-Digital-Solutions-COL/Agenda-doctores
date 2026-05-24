@@ -2,6 +2,7 @@ export type Doctor = {
   id: string;
   consultorio_id: string;
   nombre: string;
+  titulo: string | null;
   especialidad: string | null;
   foto_url: string | null;
   activo: boolean;

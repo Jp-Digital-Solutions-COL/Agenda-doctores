@@ -140,7 +140,12 @@ export default function DoctoresClient({ doctores: initial }: Props) {
                           </span>
                         )}
                       </div>
-                      <span className="font-medium">{doctor.nombre}</span>
+                      <span className="font-medium">
+                        {doctor.titulo && (
+                          <span className="text-muted-foreground font-normal mr-1">{doctor.titulo}</span>
+                        )}
+                        {doctor.nombre}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">

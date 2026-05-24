@@ -35,6 +35,7 @@ export type CitaConRel = Cita & {
 export type DoctorBasic = {
   id: string;
   nombre: string;
+  titulo: string | null;
   especialidad: string | null;
   activo: boolean;
   bloqueado_pago: boolean;

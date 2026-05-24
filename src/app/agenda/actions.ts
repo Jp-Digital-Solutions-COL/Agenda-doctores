@@ -22,7 +22,7 @@ export async function getDoctoresActivos(): Promise<DoctorBasic[]> {
 
   let query = supabase
     .from("doctores")
-    .select("id, nombre, especialidad, activo, bloqueado_pago")
+    .select("id, nombre, titulo, especialidad, activo, bloqueado_pago")
     .eq("activo", true)
     .order("nombre");
 

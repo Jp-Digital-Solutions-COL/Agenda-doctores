@@ -25,7 +25,7 @@ export default async function DoctorAgendaPage() {
   const admin = createAdminClient();
   const { data: doctorData } = await admin
     .from("doctores")
-    .select("id, nombre, especialidad, activo, bloqueado_pago")
+    .select("id, nombre, titulo, especialidad, activo, bloqueado_pago")
     .eq("id", profile.doctor_id as string)
     .single();
 
@@ -34,6 +34,7 @@ export default async function DoctorAgendaPage() {
   const doctor: DoctorBasic = {
     id: doctorData.id,
     nombre: doctorData.nombre,
+    titulo: (doctorData.titulo as string | null) ?? null,
     especialidad: (doctorData.especialidad as string | null) ?? null,
     activo: (doctorData.activo as boolean) ?? true,
     bloqueado_pago: (doctorData.bloqueado_pago as boolean) ?? false,

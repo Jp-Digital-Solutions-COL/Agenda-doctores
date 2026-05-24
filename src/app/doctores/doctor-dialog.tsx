@@ -34,6 +34,7 @@ function getInitials(nombre: string): string {
 
 export default function DoctorDialog({ open, onClose, doctor }: Props) {
   const [nombre, setNombre] = useState(doctor?.nombre ?? "");
+  const [titulo, setTitulo] = useState<string | null>(doctor?.titulo ?? null);
   const [especialidad, setEspecialidad] = useState(doctor?.especialidad ?? "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(doctor?.foto_url ?? null);
   const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
@@ -93,8 +94,8 @@ export default function DoctorDialog({ open, onClose, doctor }: Props) {
     }
 
     const result = doctor
-      ? await updateDoctor(doctor.id, nombre, especialidad, fotoUrl)
-      : await createDoctor(nombre, especialidad, fotoUrl);
+      ? await updateDoctor(doctor.id, nombre, especialidad, fotoUrl, titulo)
+      : await createDoctor(nombre, especialidad, fotoUrl, titulo);
 
     if (result.error) {
       setError(result.error);
@@ -170,13 +171,43 @@ export default function DoctorDialog({ open, onClose, doctor }: Props) {
             />
           </div>
 
+          {/* Título */}
+          <div className="space-y-2">
+            <Label>
+              Título{" "}
+              <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <div className="flex gap-2">
+              {(["Dr.", "Dra."] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setTitulo(titulo === t ? null : t)}
+                  className={`px-5 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                    titulo === t
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-input hover:bg-muted"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+              {titulo && (
+                <span className="text-xs text-muted-foreground self-center ml-1">
+                  (clic para deseleccionar)
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre completo</Label>
             <Input
               id="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Dr. Juan García"
+              placeholder="Juan García"
               required
               disabled={loading}
               autoFocus
