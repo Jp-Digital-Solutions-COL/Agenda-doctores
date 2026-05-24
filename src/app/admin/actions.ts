@@ -448,6 +448,64 @@ export async function getAsignaciones(
   return (data ?? []) as AsignacionItem[];
 }
 
+// ── Cuentas de doctor ──────────────────────────────────────────────────
+
+export async function getDoctoresCuentas(
+  consultorioId: string
+): Promise<string[]> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("doctor_id")
+    .eq("consultorio_id", consultorioId)
+    .eq("rol", "doctor")
+    .not("doctor_id", "is", null);
+  return (data ?? []).map((p) => p.doctor_id as string);
+}
+
+export async function createCuentaDoctor(
+  doctorId: string,
+  consultorioId: string,
+  nombre: string,
+  email: string,
+  password: string
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (authError) {
+    if (authError.message.includes("already registered"))
+      return { error: "Ya existe un usuario con ese correo." };
+    return { error: authError.message };
+  }
+
+  const { error: profileError } = await admin.from("profiles").upsert(
+    {
+      id: authData.user.id,
+      consultorio_id: consultorioId,
+      rol: "doctor",
+      nombre: nombre.trim(),
+      doctor_id: doctorId,
+      activo: true,
+    },
+    { onConflict: "id", ignoreDuplicates: false }
+  );
+
+  if (profileError) {
+    await admin.auth.admin.deleteUser(authData.user.id);
+    return { error: `No se pudo crear el perfil: ${profileError.message}` };
+  }
+
+  return {};
+}
+
 export async function toggleAsignacion(
   secretariaId: string,
   doctorId: string,

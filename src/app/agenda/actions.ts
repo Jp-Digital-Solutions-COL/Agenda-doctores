@@ -55,17 +55,19 @@ export async function getPacientesBasic(): Promise<PacienteBasic[]> {
 /** Citas en el rango [start, end] con joins. RLS filtra por consultorio. */
 export async function getCitas(
   start: string,
-  end: string
+  end: string,
+  doctorId?: string
 ): Promise<CitaConRel[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from("citas")
     .select("*, doctores(id, nombre), pacientes(id, nombre, telefono, cedula, email)")
     .gte("inicio", start)
     .lte("inicio", end)
     .order("inicio");
+  if (doctorId) q = q.eq("doctor_id", doctorId);
+  const { data, error } = await q;
   if (error) { console.error("getCitas error:", error.message); return []; }
-  // Map placeholder patient rows to virtual "bloqueada" estado
   const rows = (data ?? []) as CitaConRel[];
   return rows.map((c) =>
     c.pacientes?.nombre === "__bloqueo__" ? { ...c, estado: "bloqueada" as const } : c

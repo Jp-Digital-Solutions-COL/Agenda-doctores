@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
     .single();
 
   const isSuperadmin = profileData?.rol === "superadmin";
+  const isDoctor = profileData?.rol === "doctor";
   const consultorio = profileData?.consultorios as
     | { estado_suscripcion: string }
     | null
@@ -58,6 +59,16 @@ export async function middleware(request: NextRequest) {
 
   // Usuarios activos no deben ver /suspendido
   if (pathname.startsWith("/suspendido")) {
+    return NextResponse.redirect(new URL("/inicio", request.url));
+  }
+
+  // Doctores: solo pueden acceder a /doctor
+  if (isDoctor && !pathname.startsWith("/doctor")) {
+    return NextResponse.redirect(new URL("/doctor", request.url));
+  }
+
+  // No-doctores no pueden acceder a /doctor
+  if (!isDoctor && pathname.startsWith("/doctor")) {
     return NextResponse.redirect(new URL("/inicio", request.url));
   }
 

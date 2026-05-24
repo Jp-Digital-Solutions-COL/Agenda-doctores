@@ -15,6 +15,8 @@ import {
   getDoctoresConsultorio,
   getAsignaciones,
   toggleAsignacion,
+  getDoctoresCuentas,
+  createCuentaDoctor,
   type SecretariaGlobal,
   type DoctorAdmin,
   type DoctorItem,
@@ -701,6 +703,14 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   const [docError, setDocError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cuentas de acceso doctor
+  const [doctoresConAcceso, setDoctoresConAcceso] = useState<string[]>([]);
+  const [accesoDocId, setAccesoDocId] = useState<string | null>(null);
+  const [accesoEmail, setAccesoEmail] = useState("");
+  const [accesoPassword, setAccesoPassword] = useState("");
+  const [accesoLoading, setAccesoLoading] = useState(false);
+  const [accesoError, setAccesoError] = useState("");
+
   // Edit doctor
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editDocNombre, setEditDocNombre] = useState("");
@@ -716,8 +726,12 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
 
   async function loadDoctors(cid: string) {
     setLoadingDoctors(true);
-    const data = await getDoctoresAdmin(cid);
+    const [data, cuentas] = await Promise.all([
+      getDoctoresAdmin(cid),
+      getDoctoresCuentas(cid),
+    ]);
     setDoctors(data);
+    setDoctoresConAcceso(cuentas);
     setLoadingDoctors(false);
   }
 
@@ -725,7 +739,33 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
     setConsultorioId(cid);
     setDoctors([]);
     setFormOpen(false);
+    setAccesoDocId(null);
     if (cid) loadDoctors(cid);
+  }
+
+  async function handleCrearAcceso(e: React.FormEvent) {
+    e.preventDefault();
+    if (!accesoDocId || !consultorioId) return;
+    const doc = doctors.find((d) => d.id === accesoDocId);
+    if (!doc) return;
+    setAccesoLoading(true);
+    setAccesoError("");
+    const r = await createCuentaDoctor(
+      accesoDocId,
+      consultorioId,
+      doc.nombre,
+      accesoEmail.trim(),
+      accesoPassword
+    );
+    setAccesoLoading(false);
+    if (r.error) {
+      setAccesoError(r.error);
+    } else {
+      setDoctoresConAcceso((prev) => [...prev, accesoDocId]);
+      setAccesoDocId(null);
+      setAccesoEmail("");
+      setAccesoPassword("");
+    }
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1140,13 +1180,17 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                   );
                 }
 
+                const tieneAcceso = doctoresConAcceso.includes(doc.id);
+                const mostrandoAcceso = accesoDocId === doc.id;
+
                 return (
                   <div
                     key={doc.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm ${
+                    className={`rounded-lg border text-sm ${
                       !doc.activo ? "opacity-60" : ""
                     } ${doc.bloqueado_pago ? "border-amber-300 bg-amber-50/50" : ""}`}
                   >
+                    <div className="flex items-center gap-3 px-3 py-2.5">
                     {/* Avatar */}
                     <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0">
                       {doc.foto_url ? (
@@ -1173,6 +1217,27 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                       >
                         Sin pago
                       </Badge>
+                    )}
+
+                    {/* Acceso badge o botón */}
+                    {tieneAcceso ? (
+                      <span className="text-xs text-teal-700 bg-teal-50 border border-teal-200 rounded px-2 py-0.5 shrink-0">
+                        ✓ Tiene acceso
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        title="Dar acceso al doctor"
+                        onClick={() => {
+                          setAccesoDocId(mostrandoAcceso ? null : doc.id);
+                          setAccesoEmail("");
+                          setAccesoPassword("");
+                          setAccesoError("");
+                        }}
+                        className="text-xs text-primary hover:underline shrink-0"
+                      >
+                        {mostrandoAcceso ? "Cancelar" : "Dar acceso"}
+                      </button>
                     )}
 
                     {/* Edit button */}
@@ -1214,6 +1279,65 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                       />
                     </div>
                   </div>
+
+                  {/* Inline access form */}
+                  {mostrandoAcceso && (
+                    <form
+                      onSubmit={handleCrearAcceso}
+                      className="border-t px-3 py-3 space-y-2 bg-muted/20"
+                    >
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Crear cuenta de acceso para {doc.nombre}
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Correo</Label>
+                          <Input
+                            type="email"
+                            required
+                            autoFocus
+                            placeholder="doctor@ejemplo.com"
+                            value={accesoEmail}
+                            onChange={(e) => setAccesoEmail(e.target.value)}
+                            className="h-7 text-xs"
+                            disabled={accesoLoading}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Contraseña</Label>
+                          <Input
+                            type="password"
+                            required
+                            minLength={6}
+                            placeholder="Mínimo 6 caracteres"
+                            value={accesoPassword}
+                            onChange={(e) => setAccesoPassword(e.target.value)}
+                            className="h-7 text-xs"
+                            disabled={accesoLoading}
+                          />
+                        </div>
+                      </div>
+                      {accesoError && (
+                        <p className="text-xs text-destructive">{accesoError}</p>
+                      )}
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={accesoLoading || !accesoEmail.trim() || !accesoPassword}
+                      >
+                        {accesoLoading ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            Creando...
+                          </>
+                        ) : (
+                          "Crear acceso"
+                        )}
+                      </Button>
+                    </form>
+                  )}
+                </div>
                 );
               })}
             </div>

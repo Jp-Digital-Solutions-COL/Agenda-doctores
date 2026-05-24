@@ -36,6 +36,7 @@ interface Props {
   pacientes: PacienteBasic[];
   initialCitas: CitaConRel[];
   todayStr: string; // "YYYY-MM-DD"
+  lockedDoctor?: DoctorBasic; // cuando se pasa, bloquea la vista a este doctor
 }
 
 function makeNoon(dateStr: string): Date {
@@ -62,12 +63,13 @@ export default function AgendaClient({
   pacientes,
   initialCitas,
   todayStr,
+  lockedDoctor,
 }: Props) {
   const todayDate = useMemo(() => makeNoon(todayStr), [todayStr]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(todayDate);
-  const [selectedDoctorId, setSelectedDoctorId] = useState("todos");
+  const [selectedDoctorId, setSelectedDoctorId] = useState(lockedDoctor?.id ?? "todos");
   const [citas, setCitas] = useState<CitaConRel[]>(initialCitas);
   const [loadedWeekStart, setLoadedWeekStart] = useState(() =>
     startOfWeek(todayDate)
@@ -119,7 +121,8 @@ export default function AgendaClient({
       const we = endOfWeek(wStart);
       const data = await getCitas(
         new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate()).toISOString(),
-        new Date(we.getFullYear(), we.getMonth(), we.getDate(), 23, 59, 59).toISOString()
+        new Date(we.getFullYear(), we.getMonth(), we.getDate(), 23, 59, 59).toISOString(),
+        lockedDoctor?.id
       );
       setCitas(data);
       setLoadedWeekStart(wStart);
@@ -351,24 +354,26 @@ export default function AgendaClient({
           )}
         </div>
 
-        {/* Filtro por doctor */}
-        <Select value={selectedDoctorId} onValueChange={(v) => v && setSelectedDoctorId(v)}>
-          <SelectTrigger className="w-[180px] h-8 text-xs">
-            <span data-slot="select-value" className="flex flex-1 text-left truncate">
-              {selectedDoctorId === "todos"
-                ? "Todos los doctores"
-                : (activeDoctors.find((d) => d.id === selectedDoctorId)?.nombre ?? "Todos los doctores")}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos los doctores</SelectItem>
-            {activeDoctors.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
-                {d.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Filtro por doctor — oculto en modo doctor individual */}
+        {!lockedDoctor && (
+          <Select value={selectedDoctorId} onValueChange={(v) => v && setSelectedDoctorId(v)}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <span data-slot="select-value" className="flex flex-1 text-left truncate">
+                {selectedDoctorId === "todos"
+                  ? "Todos los doctores"
+                  : (activeDoctors.find((d) => d.id === selectedDoctorId)?.nombre ?? "Todos los doctores")}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los doctores</SelectItem>
+              {activeDoctors.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Toggle vista */}
         <div className="flex rounded-md border overflow-hidden">
