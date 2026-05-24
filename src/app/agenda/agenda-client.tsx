@@ -90,6 +90,8 @@ export default function AgendaClient({
     () => new Date(todayDate.getFullYear(), todayDate.getMonth(), 1)
   );
   const pickerRef = useRef<HTMLDivElement>(null);
+  const [pickerFixed, setPickerFixed] = useState(false);
+  const [pickerTop, setPickerTop] = useState(0);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -266,6 +268,12 @@ export default function AgendaClient({
           <button
             onClick={() => {
               setPickerMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+              if (pickerRef.current) {
+                const rect = pickerRef.current.getBoundingClientRect();
+                const mobile = window.innerWidth < 640;
+                setPickerFixed(mobile);
+                setPickerTop(rect.bottom + 6);
+              }
               setPickerOpen((o) => !o);
             }}
             className="flex items-center gap-1 text-sm font-semibold capitalize hover:text-primary transition-colors max-w-full"
@@ -275,7 +283,14 @@ export default function AgendaClient({
           </button>
 
           {pickerOpen && (
-            <div className="absolute left-0 top-full mt-1.5 z-50 bg-card border rounded-lg shadow-lg p-3 w-[264px]">
+            <div
+              className={`z-50 bg-card border rounded-lg shadow-lg p-3 ${
+                pickerFixed
+                  ? "fixed left-4 right-4"
+                  : "absolute left-0 top-full mt-1.5 w-[264px]"
+              }`}
+              style={pickerFixed ? { top: pickerTop } : undefined}
+            >
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-2">
                 <button
