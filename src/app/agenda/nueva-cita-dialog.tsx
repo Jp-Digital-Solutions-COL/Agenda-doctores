@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createCita, createPaciente, getHorasDisponibles } from "./actions";
 import type { DoctorBasic, PacienteBasic } from "./types";
+import { TIPOS_DOCUMENTO } from "./types";
 import { toDateStr } from "./utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ export default function NuevaCitaDialog({
   const [newTelefono, setNewTelefono] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newCedula, setNewCedula] = useState("");
+  const [newTipoDoc, setNewTipoDoc] = useState("CC");
   const [savingNew, setSavingNew] = useState(false);
   const [newError, setNewError] = useState("");
 
@@ -133,6 +135,7 @@ export default function NuevaCitaDialog({
       telefono: newTelefono || undefined,
       email: newEmail || undefined,
       cedula: newCedula || undefined,
+      tipo_documento: newCedula.trim() ? newTipoDoc : undefined,
     });
     setSavingNew(false);
     if (result.error) {
@@ -144,6 +147,7 @@ export default function NuevaCitaDialog({
       setNewTelefono("");
       setNewEmail("");
       setNewCedula("");
+      setNewTipoDoc("CC");
       setPacienteSearch("");
       setShowDropdown(false);
     }
@@ -296,7 +300,9 @@ export default function NuevaCitaDialog({
                       <p className="text-sm font-medium">{selectedPaciente.nombre}</p>
                       <div className="flex gap-2 mt-0.5">
                         {selectedPaciente.cedula && (
-                          <p className="text-xs text-muted-foreground">CC {selectedPaciente.cedula}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {selectedPaciente.tipo_documento ?? "CC"} {selectedPaciente.cedula}
+                          </p>
                         )}
                         {selectedPaciente.telefono && (
                           <p className="text-xs text-muted-foreground">{selectedPaciente.telefono}</p>
@@ -344,13 +350,27 @@ export default function NuevaCitaDialog({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Cédula <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-                        <Input
-                          value={newCedula}
-                          onChange={(e) => setNewCedula(e.target.value)}
-                          placeholder="123456789"
-                          className="h-8 text-sm"
-                        />
+                        <Label className="text-xs">Documento <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                        <div className="flex gap-1.5">
+                          <Select value={newTipoDoc} onValueChange={(v) => v && setNewTipoDoc(v)}>
+                            <SelectTrigger className="h-8 text-sm w-[72px] shrink-0 px-2">
+                              <span data-slot="select-value">{newTipoDoc}</span>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TIPOS_DOCUMENTO.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={newCedula}
+                            onChange={(e) => setNewCedula(e.target.value)}
+                            placeholder="123456789"
+                            className="h-8 text-sm flex-1"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Teléfono <span className="text-muted-foreground font-normal">(opcional)</span></Label>
@@ -424,7 +444,9 @@ export default function NuevaCitaDialog({
                                   <span className="font-medium">{p.nombre}</span>
                                   <span className="flex gap-2 mt-0.5">
                                     {p.cedula && (
-                                      <span className="text-muted-foreground text-xs">CC {p.cedula}</span>
+                                      <span className="text-muted-foreground text-xs">
+                                        {p.tipo_documento ?? "CC"} {p.cedula}
+                                      </span>
                                     )}
                                     {p.telefono && (
                                       <span className="text-muted-foreground text-xs">{p.telefono}</span>

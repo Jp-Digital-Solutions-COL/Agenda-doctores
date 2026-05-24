@@ -28,6 +28,7 @@ export type CitaConRel = Cita & {
     telefono: string | null;
     cedula: string | null;
     email: string | null;
+    tipo_documento: TipoDocumento | null;
   } | null;
 };
 
@@ -39,12 +40,22 @@ export type DoctorBasic = {
   bloqueado_pago: boolean;
 };
 
+export type TipoDocumento = "RC" | "TI" | "CC" | "CE";
+
+export const TIPOS_DOCUMENTO: { value: TipoDocumento; label: string }[] = [
+  { value: "RC", label: "Registro civil" },
+  { value: "TI", label: "TI" },
+  { value: "CC", label: "CC" },
+  { value: "CE", label: "Cédula extranjería" },
+];
+
 export type PacienteBasic = {
   id: string;
   nombre: string;
   telefono: string | null;
   email: string | null;
   cedula: string | null;
+  tipo_documento: TipoDocumento | null;
 };
 
 export const ESTADO_CONFIG: Record<

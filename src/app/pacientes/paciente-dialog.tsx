@@ -8,6 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -15,19 +21,28 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+const TIPOS_DOCUMENTO = [
+  { value: "RC", label: "Registro civil" },
+  { value: "TI", label: "TI" },
+  { value: "CC", label: "CC" },
+  { value: "CE", label: "Cédula extranjería" },
+] as const;
+
 interface Props {
   open: boolean;
   onClose: () => void;
   paciente: Paciente | null; // null = nuevo
 }
 
-const EMPTY: PacienteFields = { nombre: "", telefono: "", email: "", notas: "" };
+const EMPTY: PacienteFields = { nombre: "", telefono: "", email: "", cedula: "", tipo_documento: "CC", notas: "" };
 
 function fromPaciente(p: Paciente): PacienteFields {
   return {
     nombre: p.nombre,
     telefono: p.telefono ?? "",
     email: p.email ?? "",
+    cedula: p.cedula ?? "",
+    tipo_documento: p.tipo_documento ?? "CC",
     notas: p.notas ?? "",
   };
 }
@@ -109,6 +124,41 @@ export default function PacienteDialog({ open, onClose, paciente }: Props) {
                 onChange={(e) => set("email", e.target.value)}
                 placeholder="paciente@ejemplo.com"
                 disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Documento */}
+          <div className="space-y-2">
+            <Label>
+              Documento{" "}
+              <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <div className="flex gap-2">
+              <Select
+                value={fields.tipo_documento}
+                onValueChange={(v) => v && set("tipo_documento", v)}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[160px] shrink-0">
+                  <span data-slot="select-value">
+                    {TIPOS_DOCUMENTO.find((t) => t.value === fields.tipo_documento)?.label ?? fields.tipo_documento}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_DOCUMENTO.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                value={fields.cedula}
+                onChange={(e) => set("cedula", e.target.value)}
+                placeholder="Número de documento"
+                disabled={loading}
+                className="flex-1"
               />
             </div>
           </div>

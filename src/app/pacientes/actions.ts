@@ -40,6 +40,8 @@ export async function createPaciente(
     nombre: fields.nombre.trim(),
     telefono: fields.telefono.trim() || null,
     email: fields.email.trim() || null,
+    cedula: fields.cedula.trim() || null,
+    tipo_documento: fields.cedula.trim() ? fields.tipo_documento || null : null,
     notas: fields.notas.trim() || null,
   });
 
@@ -59,6 +61,8 @@ export async function updatePaciente(
       nombre: fields.nombre.trim(),
       telefono: fields.telefono.trim() || null,
       email: fields.email.trim() || null,
+      cedula: fields.cedula.trim() || null,
+      tipo_documento: fields.cedula.trim() ? fields.tipo_documento || null : null,
       notas: fields.notas.trim() || null,
     })
     .eq("id", id);

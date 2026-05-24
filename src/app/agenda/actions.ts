@@ -46,7 +46,7 @@ export async function getPacientesBasic(): Promise<PacienteBasic[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("pacientes")
-    .select("id, nombre, telefono, email, cedula")
+    .select("id, nombre, telefono, email, cedula, tipo_documento")
     .neq("nombre", "__bloqueo__")
     .order("nombre");
   return (data ?? []) as unknown as PacienteBasic[];
@@ -61,7 +61,7 @@ export async function getCitas(
   const supabase = await createClient();
   let q = supabase
     .from("citas")
-    .select("*, doctores(id, nombre), pacientes(id, nombre, telefono, cedula, email)")
+    .select("*, doctores(id, nombre), pacientes(id, nombre, telefono, cedula, email, tipo_documento)")
     .gte("inicio", start)
     .lte("inicio", end)
     .order("inicio");
@@ -387,6 +387,7 @@ export async function createPaciente(input: {
   telefono?: string;
   email?: string;
   cedula?: string;
+  tipo_documento?: string;
 }): Promise<{ data?: PacienteBasic; error?: string }> {
   const supabase = await createClient();
   const {
@@ -408,9 +409,10 @@ export async function createPaciente(input: {
       telefono: input.telefono?.trim() || null,
       email: input.email?.trim() || null,
       cedula: input.cedula?.trim() || null,
+      tipo_documento: input.tipo_documento || null,
       consultorio_id: profile.consultorio_id,
     })
-    .select("id, nombre, telefono, email, cedula")
+    .select("id, nombre, telefono, email, cedula, tipo_documento")
     .single();
 
   if (error) return { error: error.message };
