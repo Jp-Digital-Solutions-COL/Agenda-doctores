@@ -215,7 +215,6 @@ export async function createCita(input: {
         secretariaEmail: user.email ?? null,
         titulo: "Cita agendada",
         intro: "le informamos que se ha agendado su cita con los siguientes detalles",
-        tokenConfirmacion: token,
       });
 
       if (emailResult.error) {
