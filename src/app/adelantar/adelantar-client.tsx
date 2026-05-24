@@ -152,20 +152,26 @@ export default function AdelatarClient({ doctors }: Props) {
 
   function buildWAUrl(telefono: string, pacienteNombre: string): string {
     const tel = normalizarTel(telefono);
-    const esHoy = espacioFecha === fechaBogota(new Date().toISOString());
-    const fechaTexto = esHoy
-      ? "hoy"
-      : espacioFecha
-        ? new Intl.DateTimeFormat("es-CO", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          }).format(new Date(`${espacioFecha}T12:00:00`))
-        : "";
+    const hoyStr = fechaBogota(new Date().toISOString());
+    const mananaStr = fechaBogota(new Date(Date.now() + 86400000).toISOString());
+    const esHoy = espacioFecha === hoyStr;
+    const esManana = espacioFecha === mananaStr;
+    const fechaLarga = espacioFecha
+      ? new Intl.DateTimeFormat("es-CO", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        }).format(new Date(`${espacioFecha}T12:00:00`))
+      : "";
+    const prefijo = esHoy
+      ? `hoy ${fechaLarga}`
+      : esManana
+        ? `mañana ${fechaLarga}`
+        : `el ${fechaLarga}`;
     const mensaje =
       `Hola ${pacienteNombre}, le contactamos del consultorio. ` +
       `Tenemos disponible un espacio con ${doctorSeleccionado?.nombre ?? "el doctor"} ` +
-      `${esHoy ? fechaTexto : `el ${fechaTexto}`} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
+      `${prefijo} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
     return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
   }
 
