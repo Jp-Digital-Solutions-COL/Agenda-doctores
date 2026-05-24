@@ -152,17 +152,20 @@ export default function AdelatarClient({ doctors }: Props) {
 
   function buildWAUrl(telefono: string, pacienteNombre: string): string {
     const tel = normalizarTel(telefono);
-    const fechaTexto = espacioFecha
-      ? new Intl.DateTimeFormat("es-CO", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        }).format(new Date(`${espacioFecha}T12:00:00`))
-      : "";
+    const esHoy = espacioFecha === fechaBogota(new Date().toISOString());
+    const fechaTexto = esHoy
+      ? "hoy"
+      : espacioFecha
+        ? new Intl.DateTimeFormat("es-CO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          }).format(new Date(`${espacioFecha}T12:00:00`))
+        : "";
     const mensaje =
       `Hola ${pacienteNombre}, le contactamos del consultorio. ` +
       `Tenemos disponible un espacio con ${doctorSeleccionado?.nombre ?? "el doctor"} ` +
-      `el ${fechaTexto} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
+      `${esHoy ? fechaTexto : `el ${fechaTexto}`} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
     return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
   }
 
