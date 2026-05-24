@@ -695,6 +695,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   // New doctor form
   const [formOpen, setFormOpen] = useState(false);
   const [docNombre, setDocNombre] = useState("");
+  const [docTitulo, setDocTitulo] = useState<string | null>(null);
   const [docEsp, setDocEsp] = useState("");
   const [docPhotoPreview, setDocPhotoPreview] = useState<string | null>(null);
   const [docPendingBlob, setDocPendingBlob] = useState<Blob | null>(null);
@@ -714,6 +715,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   // Edit doctor
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editDocNombre, setEditDocNombre] = useState("");
+  const [editDocTitulo, setEditDocTitulo] = useState<string | null>(null);
   const [editDocEsp, setEditDocEsp] = useState("");
   const [editDocCurrentUrl, setEditDocCurrentUrl] = useState<string | null>(null);
   const [editDocPendingBlob, setEditDocPendingBlob] = useState<Blob | null>(null);
@@ -817,7 +819,8 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
       consultorioId,
       docNombre.trim(),
       docEsp.trim() || undefined,
-      foto_url
+      foto_url,
+      docTitulo
     );
     setDocLoading(false);
     if (r.error) {
@@ -827,6 +830,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
 
     if (docPhotoPreview) URL.revokeObjectURL(docPhotoPreview);
     setDocNombre("");
+    setDocTitulo(null);
     setDocEsp("");
     setDocPhotoPreview(null);
     setDocPendingBlob(null);
@@ -857,6 +861,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   function handleStartEdit(doc: DoctorAdmin) {
     setEditingDocId(doc.id);
     setEditDocNombre(doc.nombre);
+    setEditDocTitulo(doc.titulo ?? null);
     setEditDocEsp(doc.especialidad ?? "");
     setEditDocCurrentUrl(doc.foto_url);
     setEditDocPendingBlob(null);
@@ -921,6 +926,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
 
     const r = await updateDoctorAdmin(editingDocId, {
       nombre: editDocNombre.trim(),
+      titulo: editDocTitulo,
       especialidad: editDocEsp.trim() || null,
       foto_url,
     });
@@ -931,7 +937,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
     setDoctors((prev) =>
       prev.map((d) =>
         d.id === editingDocId
-          ? { ...d, nombre: editDocNombre.trim(), especialidad: editDocEsp.trim() || null, foto_url: finalUrl }
+          ? { ...d, nombre: editDocNombre.trim(), titulo: editDocTitulo, especialidad: editDocEsp.trim() || null, foto_url: finalUrl }
           : d
       )
     );
@@ -1025,13 +1031,34 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                 />
               </div>
 
+              <div className="space-y-1">
+                <Label className="text-xs">Título (opcional)</Label>
+                <div className="flex gap-1.5">
+                  {(["Dr.", "Dra."] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      disabled={docLoading}
+                      onClick={() => setDocTitulo(docTitulo === t ? null : t)}
+                      className={`px-3 py-1 rounded-md border text-xs font-medium transition-colors ${
+                        docTitulo === t
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-input hover:bg-muted"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid sm:grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <Label className="text-xs">Nombre</Label>
                   <Input
                     required
                     autoFocus
-                    placeholder="Dr. García"
+                    placeholder="García"
                     value={docNombre}
                     onChange={(e) => setDocNombre(e.target.value)}
                     className="h-8 text-sm"
@@ -1128,27 +1155,49 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                             </button>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-2 flex-1">
+                        <div className="flex-1 space-y-2">
                           <div className="space-y-1">
-                            <Label className="text-xs">Nombre</Label>
-                            <Input
-                              autoFocus
-                              required
-                              value={editDocNombre}
-                              onChange={(e) => setEditDocNombre(e.target.value)}
-                              className="h-7 text-xs"
-                              disabled={editDocLoading}
-                            />
+                            <Label className="text-xs">Título (opcional)</Label>
+                            <div className="flex gap-1.5">
+                              {(["Dr.", "Dra."] as const).map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  disabled={editDocLoading}
+                                  onClick={() => setEditDocTitulo(editDocTitulo === t ? null : t)}
+                                  className={`px-2.5 py-0.5 rounded-md border text-xs font-medium transition-colors ${
+                                    editDocTitulo === t
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "border-input hover:bg-muted"
+                                  }`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Especialidad</Label>
-                            <Input
-                              placeholder="Opcional"
-                              value={editDocEsp}
-                              onChange={(e) => setEditDocEsp(e.target.value)}
-                              className="h-7 text-xs"
-                              disabled={editDocLoading}
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Nombre</Label>
+                              <Input
+                                autoFocus
+                                required
+                                value={editDocNombre}
+                                onChange={(e) => setEditDocNombre(e.target.value)}
+                                className="h-7 text-xs"
+                                disabled={editDocLoading}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Especialidad</Label>
+                              <Input
+                                placeholder="Opcional"
+                                value={editDocEsp}
+                                onChange={(e) => setEditDocEsp(e.target.value)}
+                                className="h-7 text-xs"
+                                disabled={editDocLoading}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1203,7 +1252,12 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{doc.nombre}</p>
+                      <p className="font-medium truncate">
+                        {doc.titulo && (
+                          <span className="text-muted-foreground font-normal mr-1">{doc.titulo}</span>
+                        )}
+                        {doc.nombre}
+                      </p>
                       {doc.especialidad && (
                         <p className="text-xs text-muted-foreground truncate">{doc.especialidad}</p>
                       )}

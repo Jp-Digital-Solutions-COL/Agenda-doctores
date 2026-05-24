@@ -86,6 +86,7 @@ export type SecretariaGlobal = {
 export type DoctorAdmin = {
   id: string;
   nombre: string;
+  titulo: string | null;
   especialidad: string | null;
   foto_url: string | null;
   activo: boolean;
@@ -257,13 +258,14 @@ export async function getDoctoresAdmin(
 
   const { data } = await admin
     .from("doctores")
-    .select("id, nombre, especialidad, foto_url, activo, bloqueado_pago, consultorio_id")
+    .select("id, nombre, titulo, especialidad, foto_url, activo, bloqueado_pago, consultorio_id")
     .eq("consultorio_id", consultorioId)
     .order("nombre");
 
   return (data ?? []).map((d) => ({
     id: d.id,
     nombre: d.nombre,
+    titulo: d.titulo ?? null,
     especialidad: d.especialidad ?? null,
     foto_url: d.foto_url ?? null,
     activo: d.activo ?? true,
@@ -313,7 +315,8 @@ export async function createDoctorAdmin(
   consultorioId: string,
   nombre: string,
   especialidad: string | undefined,
-  foto_url: string | null
+  foto_url: string | null,
+  titulo: string | null
 ): Promise<{ error?: string }> {
   await assertSuperadmin();
   const admin = createAdminClient();
@@ -323,6 +326,7 @@ export async function createDoctorAdmin(
     .insert({
       consultorio_id: consultorioId,
       nombre: nombre.trim(),
+      titulo: titulo || null,
       especialidad: especialidad?.trim() || null,
       foto_url,
       activo: true,
@@ -383,13 +387,14 @@ export async function toggleDoctorBloqueadoPago(
 
 export async function updateDoctorAdmin(
   id: string,
-  data: { nombre: string; especialidad: string | null; foto_url?: string | null }
+  data: { nombre: string; titulo?: string | null; especialidad: string | null; foto_url?: string | null }
 ): Promise<{ error?: string }> {
   await assertSuperadmin();
   const admin = createAdminClient();
   const update: Record<string, unknown> = {
     nombre: data.nombre.trim(),
     especialidad: data.especialidad,
+    titulo: data.titulo ?? null,
   };
   if (data.foto_url !== undefined) update.foto_url = data.foto_url;
   const { error } = await admin.from("doctores").update(update).eq("id", id);
