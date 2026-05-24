@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { startOfWeek, endOfWeek, addDays, toDateStr } from "@/app/agenda/utils";
 import { ESTADO_CONFIG } from "@/app/agenda/types";
-import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut } from "lucide-react";
+import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut, Zap } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -197,6 +197,12 @@ export default async function InicioPage() {
             >
               Agenda
             </Link>
+            <Link
+              href="/adelantar"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
+            >
+              Adelantar
+            </Link>
           </nav>
           <form action={signOut} className="ml-auto">
             <Button variant="ghost" size="sm" type="submit" className="gap-1.5 text-muted-foreground">
@@ -214,6 +220,16 @@ export default async function InicioPage() {
           <p className="text-muted-foreground text-sm capitalize mt-0.5">
             {fechaLabel()}
           </p>
+        </div>
+
+        {/* ── Acción rápida ────────────────────────────────────── */}
+        <div>
+          <Link href="/adelantar">
+            <Button className="gap-2 bg-teal-600 hover:bg-teal-700 text-white shadow-sm">
+              <Zap className="h-4 w-4" />
+              Adelantar citas
+            </Button>
+          </Link>
         </div>
 
         {/* ── Tarjetas de resumen ──────────────────────────────── */}

@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Calendar, CalendarDays, Ban } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Calendar, CalendarDays, Ban, Zap } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -397,7 +397,7 @@ export default function AgendaClient({
           </Button>
         </div>
 
-        {/* Nueva cita / Bloquear */}
+        {/* Nueva cita / Bloquear / Adelantar */}
         <div className="flex items-center gap-1.5">
           <Button
             size="sm"
@@ -416,6 +416,18 @@ export default function AgendaClient({
             <Ban className="h-3.5 w-3.5" />
             Bloquear
           </Button>
+          {!lockedDoctor && (
+            <Link href="/adelantar">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 border-teal-300 text-teal-700 hover:bg-teal-50"
+              >
+                <Zap className="h-3.5 w-3.5" />
+                Adelantar
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
