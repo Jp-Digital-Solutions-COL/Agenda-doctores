@@ -272,18 +272,18 @@ export default function AdminClient({
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       {/* Encabezado */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-3">
           <Image
             src="/Med-Agenda_solo_logo.png"
             alt="Med-Agenda"
             width={72}
             height={72}
-            className="h-16 w-auto"
+            className="h-12 sm:h-16 w-auto shrink-0"
             priority
           />
-          <div>
-            <h1 className="text-2xl font-bold">Panel de administración</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">Panel de administración</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {consultorios.length} consultorio
               {consultorios.length !== 1 ? "s" : ""} registrado
@@ -291,7 +291,7 @@ export default function AdminClient({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
           <Link href="/inicio">
             <Button variant="ghost" size="sm" className="gap-1.5">
               <LayoutDashboard className="h-4 w-4" />

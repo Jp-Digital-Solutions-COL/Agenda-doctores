@@ -205,7 +205,7 @@ export default function CalendarDayView({
               return (
                 <div
                   key={doc.id}
-                  className={`flex-1 px-3 py-2 text-xs font-semibold truncate min-w-[120px] flex items-center gap-1.5 ${i > 0 ? "border-l" : ""}`}
+                  className={`flex-1 px-3 py-2 text-xs font-semibold truncate min-w-[90px] flex items-center gap-1.5 ${i > 0 ? "border-l" : ""}`}
                 >
                   <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
                   {doc.nombre}
@@ -216,7 +216,7 @@ export default function CalendarDayView({
         )}
 
         <div
-          className="flex flex-1 overflow-y-auto select-none"
+          className="flex flex-1 overflow-y-auto overflow-x-auto select-none"
           ref={scrollRef}
         >
           {/* Time gutter */}
@@ -259,7 +259,7 @@ export default function CalendarDayView({
               return (
                 <div
                   key={doc.id}
-                  className={`flex-1 relative min-w-[120px] cursor-pointer transition-colors duration-100 hover:bg-muted/[0.08] ${idx > 0 ? "border-l" : ""}`}
+                  className={`flex-1 relative min-w-[90px] cursor-pointer transition-colors duration-100 hover:bg-muted/[0.08] ${idx > 0 ? "border-l" : ""}`}
                   style={{ height: TOTAL_H }}
                   onClick={(e) => {
                     if (!onSlotClick || isDraggingRef.current) return;
