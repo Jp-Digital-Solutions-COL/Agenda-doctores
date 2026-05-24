@@ -331,6 +331,7 @@ export async function bloquearHoras(input: {
 }
 
 export async function sendConfirmacionEmail(params: {
+  citaId: string;
   doctorId: string;
   to: string;
   paciente: string;
@@ -345,6 +346,17 @@ export async function sendConfirmacionEmail(params: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Si la cita no tiene token (citas previas al deploy), generar y persistir uno ahora
+  let token = params.token ?? null;
+  if (!token) {
+    token = crypto.randomUUID();
+    const admin = createAdminClient();
+    await admin
+      .from("citas")
+      .update({ token_confirmacion: token })
+      .eq("id", params.citaId);
+  }
 
   const [doctorResult, profileResult] = await Promise.all([
     supabase.from("doctores").select("foto_url, especialidad").eq("id", params.doctorId).single(),
@@ -364,7 +376,7 @@ export async function sendConfirmacionEmail(params: {
     motivo: params.motivo,
     secretariaWA: (profileResult.data as { telefono?: string | null } | null)?.telefono ?? null,
     secretariaEmail: user?.email ?? null,
-    tokenConfirmacion: params.token ?? null,
+    tokenConfirmacion: token,
   });
 }
 

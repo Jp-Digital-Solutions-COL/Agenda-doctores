@@ -166,6 +166,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
     setEmailLoading(true);
     setEmailError("");
     const r = await sendConfirmacionEmail({
+      citaId: c.id,
       doctorId: c.doctor_id,
       to: c.pacientes.email,
       paciente: c.pacientes.nombre,
