@@ -27,6 +27,35 @@ import {
 const TZ = "America/Bogota";
 const SESSION_KEY = "adelantar_contactados";
 
+const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+/** "HH:MM" → "2:30 p.m." / "9:00 a.m." */
+function hora12(horaStr: string): string {
+  const [h, m] = horaStr.split(":").map(Number);
+  const ampm = h < 12 ? "a.m." : "p.m.";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+/** "YYYY-MM-DD" → "domingo 24 de mayo" (sin coma) */
+function fechaNatural(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const diaSemana = DIAS[new Date(y, m - 1, d).getDay()];
+  return `${diaSemana} ${d} de ${MESES_ES[m - 1]}`;
+}
+
+/** ISO de la cita del paciente → "hoy" | "mañana" | "15 de junio" */
+function labelFechaPaciente(iso: string): string {
+  const fecha = fechaBogota(iso);
+  const hoy = fechaBogota(new Date().toISOString());
+  const manana = fechaBogota(new Date(Date.now() + 86400000).toISOString());
+  if (fecha === hoy) return "hoy";
+  if (fecha === manana) return "mañana";
+  const [, m, d] = fecha.split("-").map(Number);
+  return `${d} de ${MESES_ES[m - 1]}`;
+}
+
 function normalizarTel(tel: string): string {
   const limpio = tel.replace(/[\s\-\(\)\.]/g, "");
   if (limpio.startsWith("+57")) return limpio.slice(1);
@@ -150,33 +179,41 @@ export default function AdelatarClient({ doctors }: Props) {
 
   const doctorSeleccionado = doctors.find((d) => d.id === doctorId);
 
-  function buildWAUrl(telefono: string, pacienteNombre: string): string {
+  function buildWAUrl(telefono: string, pacienteNombre: string, citaInicio: string): string {
     const tel = normalizarTel(telefono);
-    const hoyStr = fechaBogota(new Date().toISOString());
-    const mananaStr = fechaBogota(new Date(Date.now() + 86400000).toISOString());
-    const esHoy = espacioFecha === hoyStr;
-    const esManana = espacioFecha === mananaStr;
-    const fechaLarga = espacioFecha
-      ? new Intl.DateTimeFormat("es-CO", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        }).format(new Date(`${espacioFecha}T12:00:00`))
-      : "";
-    const prefijo = esHoy
-      ? `hoy ${fechaLarga}`
-      : esManana
-        ? `mañana ${fechaLarga}`
-        : `el ${fechaLarga}`;
+
+    // Primer nombre del paciente
+    const primerNombre = pacienteNombre.split(" ")[0];
+
+    // Etiqueta del doctor
     const doctorLabel = doctorSeleccionado
       ? doctorSeleccionado.titulo
         ? `${doctorSeleccionado.titulo} ${doctorSeleccionado.nombre}`
         : `el/la doctor(a) ${doctorSeleccionado.nombre}`
       : "el doctor";
+
+    // Fecha del espacio liberado
+    const hoyStr = fechaBogota(new Date().toISOString());
+    const mananaStr = fechaBogota(new Date(Date.now() + 86400000).toISOString());
+    const natural = espacioFecha ? fechaNatural(espacioFecha) : "";
+    const prefijoEspacio = espacioFecha === hoyStr
+      ? `hoy ${natural}`
+      : espacioFecha === mananaStr
+        ? `mañana ${natural}`
+        : `el ${natural}`;
+
+    // Hora en formato 12h
+    const horaFormateada = hora12(espacioHora);
+
+    // Fecha de la cita actual del paciente
+    const fechaCitaPaciente = labelFechaPaciente(citaInicio);
+
     const mensaje =
-      `Hola ${pacienteNombre}, le contactamos del consultorio. ` +
-      `Tenemos disponible un espacio con ${doctorLabel} ` +
-      `${prefijo} a las ${espacioHora}. ¿Le gustaría adelantar su cita?`;
+      `Hola ${primerNombre}, le escribimos del consultorio de ${doctorLabel}. ` +
+      `Se abrió un espacio disponible ${prefijoEspacio} a las ${horaFormateada}. ` +
+      `Vimos que su cita está agendada para ${fechaCitaPaciente}; si desea, podemos adelantarla a este nuevo horario. ` +
+      `¿Le sirve? Quedamos atentos para confirmar.`;
+
     return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
   }
 
@@ -352,7 +389,7 @@ export default function AdelatarClient({ doctors }: Props) {
                   if (!pac) return null;
                   const isContacted = contacted.has(c.id);
                   const waUrl = pac.telefono
-                    ? buildWAUrl(pac.telefono, pac.nombre)
+                    ? buildWAUrl(pac.telefono, pac.nombre, c.inicio)
                     : null;
 
                   return (
