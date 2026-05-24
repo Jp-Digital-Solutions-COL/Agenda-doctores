@@ -4,6 +4,7 @@ import {
   getDoctoresActivos,
   getPacientesBasic,
   getCitas,
+  getHorariosParaCalendario,
 } from "./actions";
 import AgendaClient from "./agenda-client";
 import { startOfWeek, endOfWeek, toDateStr } from "./utils";
@@ -32,6 +33,8 @@ export default async function AgendaPage() {
     getCitas(`${toDateStr(ws)}T00:00:00`, `${toDateStr(we)}T23:59:59`),
   ]);
 
+  const horarios = await getHorariosParaCalendario(doctors.map((d) => d.id));
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <AgendaClient
@@ -39,6 +42,7 @@ export default async function AgendaPage() {
         pacientes={pacientes}
         initialCitas={citas}
         todayStr={toDateStr(today)}
+        horarios={horarios}
       />
     </div>
   );

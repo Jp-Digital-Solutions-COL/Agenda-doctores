@@ -11,7 +11,7 @@ import {
   type DragMoveEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import type { CitaConRel, DoctorBasic } from "./types";
+import type { CitaConRel, DoctorBasic, HorarioCalendario } from "./types";
 import { ESTADO_CONFIG } from "./types";
 import { durationMinutes, formatTime, isSameDay } from "./utils";
 import { CalendarDays } from "lucide-react";
@@ -125,6 +125,7 @@ interface Props {
   doctors: DoctorBasic[];
   allDoctors: DoctorBasic[];
   citas: CitaConRel[];
+  horarios?: HorarioCalendario[];
   onCitaClick: (c: CitaConRel) => void;
   onSlotClick?: (day: Date, time: string) => void;
   onReschedule?: (id: string, inicioISO: string, finISO: string) => Promise<void>;
@@ -136,6 +137,7 @@ export default function CalendarDayView({
   doctors,
   allDoctors,
   citas,
+  horarios = [],
   onCitaClick,
   onSlotClick,
   onReschedule,
@@ -302,6 +304,13 @@ export default function CalendarDayView({
               const color = doctorColor(doctorIdx >= 0 ? doctorIdx : idx);
               const colGhost = ghost?.colIdx === idx ? ghost : null;
               const layout = computeOverlapLayout(docCitas);
+              const horarioDia = horarios.find(
+                (h) => h.doctor_id === doc.id && h.dia_semana === date.getDay()
+              );
+              const almuerzo =
+                horarioDia?.almuerzo_inicio && horarioDia?.almuerzo_fin
+                  ? { inicio: horarioDia.almuerzo_inicio.slice(0, 5), fin: horarioDia.almuerzo_fin.slice(0, 5) }
+                  : null;
 
               return (
                 <div
@@ -322,6 +331,13 @@ export default function CalendarDayView({
                     <div className="absolute flex items-center justify-center pointer-events-none left-0 right-0" style={{ top: (WORK_START - GRID_START) * HOUR_HEIGHT, height: (WORK_END - WORK_START) * HOUR_HEIGHT }}>
                       <p className="text-xs text-muted-foreground/40">Sin citas</p>
                     </div>
+                  )}
+
+                  {almuerzo && (
+                    <AlmuerzoBlock
+                      inicio={almuerzo.inicio}
+                      fin={almuerzo.fin}
+                    />
                   )}
 
                   {colGhost && (
@@ -426,6 +442,29 @@ function CitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function AlmuerzoBlock({ inicio, fin }: { inicio: string; fin: string }) {
+  const [ih, im] = inicio.split(":").map(Number);
+  const [fh, fm] = fin.split(":").map(Number);
+  const top = (ih * 60 + im - GRID_START * 60) * (HOUR_HEIGHT / 60);
+  const h = Math.max(((fh * 60 + fm) - (ih * 60 + im)) * (HOUR_HEIGHT / 60), 16);
+  if (top + h <= 0 || top >= TOTAL_H) return null;
+  return (
+    <div
+      className="absolute left-0.5 right-0.5 rounded overflow-hidden pointer-events-none"
+      style={{
+        top: Math.max(0, top),
+        height: h,
+        background: "rgba(241,245,249,0.96)",
+        borderLeft: "3px solid #cbd5e1",
+      }}
+    >
+      <p className="text-[10px] text-slate-400 font-medium px-1.5 pt-0.5 leading-tight select-none">
+        Almuerzo
+      </p>
+    </div>
   );
 }
 

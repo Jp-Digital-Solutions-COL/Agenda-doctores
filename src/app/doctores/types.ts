@@ -16,6 +16,8 @@ export type Horario = {
   hora_inicio: string;
   hora_fin: string;
   duracion_cita: number;
+  almuerzo_inicio: string | null;
+  almuerzo_fin: string | null;
 };
 
 export type HorarioDia = {
@@ -23,6 +25,8 @@ export type HorarioDia = {
   hora_inicio: string; // "HH:MM"
   hora_fin: string;
   duracion_cita: number;
+  almuerzo_inicio: string; // "HH:MM" or ""
+  almuerzo_fin: string;
 };
 
 export const DIAS_SEMANA = [
@@ -42,4 +46,6 @@ export const DEFAULT_HORARIO_DIA: HorarioDia = {
   hora_inicio: "08:00",
   hora_fin: "17:00",
   duracion_cita: 30,
+  almuerzo_inicio: "",
+  almuerzo_fin: "",
 };

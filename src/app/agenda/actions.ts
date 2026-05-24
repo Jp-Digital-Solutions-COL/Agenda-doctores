@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { CitaConRel, DoctorBasic, EstadoCita, PacienteBasic } from "./types";
+import type { CitaConRel, DoctorBasic, EstadoCita, HorarioCalendario, PacienteBasic } from "./types";
 import { sendConfirmacionCita } from "@/lib/email";
 
 export async function getDoctoresActivos(): Promise<DoctorBasic[]> {
@@ -92,12 +92,12 @@ export async function getHorasDisponibles(
 
   const { data: horarioData } = await supabase
     .from("horarios")
-    .select("hora_inicio, hora_fin, duracion_cita")
+    .select("hora_inicio, hora_fin, duracion_cita, almuerzo_inicio, almuerzo_fin")
     .eq("doctor_id", doctorId)
     .eq("dia_semana", diaSemana)
     .single();
 
-  const horario = horarioData ?? { hora_inicio: "07:00", hora_fin: "20:00", duracion_cita: 30 };
+  const horario = horarioData ?? { hora_inicio: "07:00", hora_fin: "20:00", duracion_cita: 30, almuerzo_inicio: null, almuerzo_fin: null };
 
   const dayEndISO = new Date(
     new Date(dayStartISO).getTime() + 24 * 3600 * 1000
@@ -124,7 +124,16 @@ export async function getHorasDisponibles(
   const dayStartMs = new Date(dayStartISO).getTime();
   const slots: string[] = [];
 
+  // Parse almuerzo to minutes (DB returns "HH:MM:SS", we need minutes-since-midnight)
+  function hmToMin(t: string) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+  const alMin = (horario.almuerzo_inicio && horario.almuerzo_fin)
+    ? { start: hmToMin(horario.almuerzo_inicio), end: hmToMin(horario.almuerzo_fin) }
+    : null;
+
   for (let min = startMin; min + dur <= endMin; min += dur) {
+    // Skip slots that overlap with the lunch break
+    if (alMin && min < alMin.end && min + dur > alMin.start) continue;
+
     const slotStartMs = dayStartMs + min * 60000;
     const slotEndMs = dayStartMs + (min + dur) * 60000;
 
@@ -187,10 +196,11 @@ export async function createCita(input: {
 
   // Enviar correo de confirmación (no bloquea la creación si falla)
   try {
-    const [pacienteResult, doctorResult, perfilResult] = await Promise.all([
+    const [pacienteResult, doctorResult, perfilResult, consultorioResult] = await Promise.all([
       supabase.from("pacientes").select("nombre, email").eq("id", input.pacienteId).single(),
       supabase.from("doctores").select("nombre, foto_url, especialidad").eq("id", input.doctorId).single(),
       supabase.from("profiles").select("telefono").eq("id", user.id).single(),
+      supabase.from("consultorios").select("nombre, direccion, telefono_contacto").eq("id", profile.consultorio_id).single(),
     ]);
 
     const pacienteEmail = pacienteResult.data?.email;
@@ -217,6 +227,9 @@ export async function createCita(input: {
         secretariaEmail: user.email ?? null,
         titulo: "Cita agendada",
         intro: "le informamos que se ha agendado su cita con los siguientes detalles",
+        consultorioNombre: (consultorioResult.data as { nombre?: string | null } | null)?.nombre ?? null,
+        consultorioDireccion: (consultorioResult.data as { direccion?: string | null } | null)?.direccion ?? null,
+        consultorioTelefono: (consultorioResult.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null,
       });
 
       if (emailResult.error) {
@@ -363,9 +376,14 @@ export async function sendConfirmacionEmail(params: {
   const [doctorResult, profileResult] = await Promise.all([
     supabase.from("doctores").select("foto_url, especialidad").eq("id", params.doctorId).single(),
     user
-      ? supabase.from("profiles").select("telefono").eq("id", user.id).single()
+      ? supabase.from("profiles").select("telefono, consultorio_id").eq("id", user.id).single()
       : Promise.resolve({ data: null }),
   ]);
+
+  const consultorioId = (profileResult.data as { consultorio_id?: string | null } | null)?.consultorio_id;
+  const consultorioResult = consultorioId
+    ? await supabase.from("consultorios").select("nombre, direccion, telefono_contacto").eq("id", consultorioId).single()
+    : null;
 
   return sendConfirmacionCita({
     to: params.to,
@@ -379,6 +397,9 @@ export async function sendConfirmacionEmail(params: {
     secretariaWA: (profileResult.data as { telefono?: string | null } | null)?.telefono ?? null,
     secretariaEmail: user?.email ?? null,
     tokenConfirmacion: token,
+    consultorioNombre: (consultorioResult?.data as { nombre?: string | null } | null)?.nombre ?? null,
+    consultorioDireccion: (consultorioResult?.data as { direccion?: string | null } | null)?.direccion ?? null,
+    consultorioTelefono: (consultorioResult?.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null,
   });
 }
 
@@ -418,4 +439,16 @@ export async function createPaciente(input: {
   if (error) return { error: error.message };
   revalidatePath("/agenda");
   return { data: data as unknown as PacienteBasic };
+}
+
+export async function getHorariosParaCalendario(
+  doctorIds: string[]
+): Promise<HorarioCalendario[]> {
+  if (doctorIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("horarios")
+    .select("doctor_id, dia_semana, almuerzo_inicio, almuerzo_fin")
+    .in("doctor_id", doctorIds);
+  return (data ?? []) as HorarioCalendario[];
 }

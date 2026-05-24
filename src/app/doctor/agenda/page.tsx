@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCitas, getPacientesBasic } from "@/app/agenda/actions";
+import { getCitas, getPacientesBasic, getHorariosParaCalendario } from "@/app/agenda/actions";
 import AgendaClient from "@/app/agenda/agenda-client";
 import { startOfWeek, endOfWeek, toDateStr } from "@/app/agenda/utils";
 import type { DoctorBasic } from "@/app/agenda/types";
@@ -44,13 +44,14 @@ export default async function DoctorAgendaPage() {
   const ws = startOfWeek(today);
   const we = endOfWeek(today);
 
-  const [pacientes, citas] = await Promise.all([
+  const [pacientes, citas, horarios] = await Promise.all([
     getPacientesBasic(),
     getCitas(
       `${toDateStr(ws)}T00:00:00`,
       `${toDateStr(we)}T23:59:59`,
       doctor.id
     ),
+    getHorariosParaCalendario([doctor.id]),
   ]);
 
   return (
@@ -61,6 +62,7 @@ export default async function DoctorAgendaPage() {
         initialCitas={citas}
         todayStr={toDateStr(today)}
         lockedDoctor={doctor}
+        horarios={horarios}
       />
     </div>
   );

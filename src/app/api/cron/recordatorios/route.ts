@@ -1,75 +1,23 @@
-import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendConfirmacionCita } from "@/lib/email";
 
-// Formato "lunes 23 de junio de 2025" en es-MX
 function formatFecha(iso: string): string {
-  return new Intl.DateTimeFormat("es-MX", {
+  return new Intl.DateTimeFormat("es-CO", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "America/Mexico_City",
+    timeZone: "America/Bogota",
   }).format(new Date(iso));
 }
 
-// Formato "09:00"
 function formatHora(iso: string): string {
-  return new Intl.DateTimeFormat("es-MX", {
+  return new Intl.DateTimeFormat("es-CO", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "America/Mexico_City",
+    timeZone: "America/Bogota",
   }).format(new Date(iso));
-}
-
-function emailHtml(
-  nombrePaciente: string,
-  nombreDoctor: string,
-  fecha: string,
-  hora: string
-): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8" /></head>
-<body style="font-family:sans-serif;color:#1a1a1a;max-width:520px;margin:0 auto;padding:24px">
-  <h2 style="margin-bottom:4px">Recordatorio de cita médica</h2>
-  <p style="color:#555;margin-top:0">Te recordamos que tienes una cita programada para mañana.</p>
-
-  <table style="width:100%;border-collapse:collapse;margin-top:20px">
-    <tr>
-      <td style="padding:10px 12px;background:#f5f5f5;border-radius:6px 6px 0 0;font-weight:600">
-        Paciente
-      </td>
-      <td style="padding:10px 12px;background:#f5f5f5;border-radius:6px 6px 0 0">
-        ${nombrePaciente}
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5;font-weight:600">Doctor</td>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5">${nombreDoctor}</td>
-    </tr>
-    <tr>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5;font-weight:600">Fecha</td>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5;text-transform:capitalize">
-        ${fecha}
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5;border-radius:0 0 6px 6px;font-weight:600">
-        Hora
-      </td>
-      <td style="padding:10px 12px;border-top:1px solid #e5e5e5;border-radius:0 0 6px 6px">
-        ${hora}
-      </td>
-    </tr>
-  </table>
-
-  <p style="margin-top:24px;font-size:13px;color:#888">
-    Si necesitas cancelar o reagendar, comunícate con el consultorio a la brevedad.
-  </p>
-</body>
-</html>`;
 }
 
 export async function GET(request: Request) {
@@ -79,8 +27,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const supabase = createAdminClient(); // se salta el RLS
+  const supabase = createAdminClient();
 
   // ── Ventana de tiempo: mañana en UTC ──────────────────────
   const ahora = new Date();
@@ -97,9 +44,10 @@ export async function GET(request: Request) {
   const { data: citas, error: citasError } = await supabase
     .from("citas")
     .select(
-      `id, inicio,
-       doctores  ( nombre ),
-       pacientes ( nombre, email )`
+      `id, inicio, motivo, token_confirmacion,
+       doctores  ( nombre, especialidad, foto_url ),
+       pacientes ( nombre, email ),
+       consultorios ( nombre, direccion, telefono_contacto )`
     )
     .eq("estado", "programada")
     .gte("inicio", manana.toISOString())
@@ -113,8 +61,9 @@ export async function GET(request: Request) {
   const resultados: { citaId: string; estado: "enviado" | "sin_email" | "error"; detalle?: string }[] = [];
 
   for (const cita of citas ?? []) {
-    const paciente = (cita.pacientes as unknown) as { nombre: string; email: string | null } | null;
-    const doctor   = (cita.doctores  as unknown) as { nombre: string } | null;
+    const paciente    = (cita.pacientes    as unknown) as { nombre: string; email: string | null } | null;
+    const doctor      = (cita.doctores     as unknown) as { nombre: string; especialidad: string | null; foto_url: string | null } | null;
+    const consultorio = (cita.consultorios as unknown) as { nombre: string | null; direccion: string | null; telefono_contacto: string | null } | null;
 
     if (!paciente?.email) {
       resultados.push({ citaId: cita.id, estado: "sin_email" });
@@ -135,20 +84,27 @@ export async function GET(request: Request) {
     }
 
     // ── Enviar email ─────────────────────────────────────────
-    const fecha = formatFecha(cita.inicio);
-    const hora  = formatHora(cita.inicio);
-
-    const { error: resendError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "Agenda Médica <recordatorios@resend.dev>",
-      to:   paciente.email,
-      subject: `Recordatorio: cita mañana a las ${hora}`,
-      html: emailHtml(paciente.nombre, doctor?.nombre ?? "tu doctor", fecha, hora),
+    const { error: emailError } = await sendConfirmacionCita({
+      to: paciente.email,
+      paciente: paciente.nombre,
+      doctor: doctor?.nombre ?? "tu doctor",
+      especialidad: doctor?.especialidad ?? null,
+      fotoUrl: doctor?.foto_url ?? null,
+      fecha: formatFecha(cita.inicio),
+      hora: formatHora(cita.inicio),
+      motivo: (cita.motivo as string | null) ?? null,
+      secretariaWA: null,
+      secretariaEmail: null,
+      tokenConfirmacion: (cita.token_confirmacion as string | null) ?? null,
+      consultorioNombre: consultorio?.nombre ?? null,
+      consultorioDireccion: consultorio?.direccion ?? null,
+      consultorioTelefono: consultorio?.telefono_contacto ?? null,
     });
 
-    const estadoEnvio = resendError ? "error" : "enviado";
+    const estadoEnvio = emailError ? "error" : "enviado";
 
-    if (resendError) {
-      console.error("[recordatorios] Resend error para cita", cita.id, resendError);
+    if (emailError) {
+      console.error("[recordatorios] Email error para cita", cita.id, emailError);
     }
 
     // ── Registrar en recordatorios ───────────────────────────
@@ -166,13 +122,13 @@ export async function GET(request: Request) {
     resultados.push({
       citaId: cita.id,
       estado: estadoEnvio,
-      ...(resendError ? { detalle: resendError.message } : {}),
+      ...(emailError ? { detalle: emailError } : {}),
     });
   }
 
-  const enviados  = resultados.filter((r) => r.estado === "enviado").length;
-  const sinEmail  = resultados.filter((r) => r.estado === "sin_email").length;
-  const errores   = resultados.filter((r) => r.estado === "error").length;
+  const enviados = resultados.filter((r) => r.estado === "enviado").length;
+  const sinEmail = resultados.filter((r) => r.estado === "sin_email").length;
+  const errores  = resultados.filter((r) => r.estado === "error").length;
 
   console.log(`[recordatorios] Procesadas ${citas?.length ?? 0} citas — enviados: ${enviados}, sin email: ${sinEmail}, errores: ${errores}`);
 

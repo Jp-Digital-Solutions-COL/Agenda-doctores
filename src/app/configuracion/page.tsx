@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getDoctoresActivos } from "@/app/agenda/actions";
-import AdelatarClient from "./adelantar-client";
+import { getConsultorioConfig } from "./actions";
+import ConfiguracionClient from "./configuracion-client";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ async function signOut() {
   redirect("/login");
 }
 
-export default async function AdelatarPage() {
+export default async function ConfiguracionPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,7 +31,7 @@ export default async function AdelatarPage() {
     redirect("/inicio");
   }
 
-  const doctors = await getDoctoresActivos();
+  const config = await getConsultorioConfig();
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -60,15 +60,15 @@ export default async function AdelatarPage() {
             >
               Agenda
             </Link>
-            <span className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1 rounded-md">
-              Adelantar
-            </span>
             <Link
-              href="/configuracion"
+              href="/adelantar"
               className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
             >
-              Configuración
+              Adelantar
             </Link>
+            <span className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1 rounded-md">
+              Configuración
+            </span>
           </nav>
           <form action={signOut} className="ml-auto">
             <Button
@@ -84,8 +84,8 @@ export default async function AdelatarPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        <AdelatarClient doctors={doctors} />
+      <main className="max-w-xl mx-auto px-4 py-6">
+        <ConfiguracionClient config={config} />
       </main>
     </div>
   );

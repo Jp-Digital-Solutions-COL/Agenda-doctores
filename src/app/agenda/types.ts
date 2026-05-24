@@ -101,6 +101,13 @@ export const ESTADO_CONFIG: Record<
   },
 };
 
+export type HorarioCalendario = {
+  doctor_id: string;
+  dia_semana: number;
+  almuerzo_inicio: string | null; // "HH:MM:SS" from DB
+  almuerzo_fin: string | null;
+};
+
 export const TODOS_LOS_ESTADOS: EstadoCita[] = [
   "programada",
   "confirmada",

@@ -22,11 +22,14 @@ export async function sendConfirmacionCita(params: {
   titulo?: string;
   intro?: string;
   tokenConfirmacion?: string | null;
+  consultorioNombre?: string | null;
+  consultorioDireccion?: string | null;
+  consultorioTelefono?: string | null;
 }): Promise<{ error?: string }> {
   const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo, secretariaWA, secretariaEmail } = params;
   const titulo = params.titulo ?? "Recordatorio de cita";
   const intro = params.intro ?? "le recordamos los detalles de su próxima cita";
-  const { tokenConfirmacion } = params;
+  const { tokenConfirmacion, consultorioNombre, consultorioDireccion, consultorioTelefono } = params;
 
   const fotoSrc = fotoUrl ?? `${APP_URL}/Med-Agenda_solo_logo.png`;
   const isLogoFallback = !fotoUrl;
@@ -101,6 +104,20 @@ export async function sendConfirmacionCita(params: {
                 </tr>`
                   : ""}
               </table>
+
+              <!-- Lugar de la cita -->
+              ${(consultorioNombre || consultorioDireccion) ? `
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="margin-top:16px;background:#f0fdfa;border-radius:10px;border:1px solid #99f6e4;">
+                <tr>
+                  <td style="padding:12px 16px;">
+                    <span style="font-size:12px;color:#0d9488;text-transform:uppercase;letter-spacing:0.05em;">Lugar de la cita</span>
+                    ${consultorioNombre ? `<br/><span style="font-size:15px;font-weight:600;color:#111827;">${consultorioNombre}</span>` : ""}
+                    ${consultorioDireccion ? `<br/><span style="font-size:14px;color:#374151;">${consultorioDireccion}</span>` : ""}
+                    ${consultorioTelefono ? `<br/><span style="font-size:13px;color:#6b7280;">Tel: ${consultorioTelefono}</span>` : ""}
+                  </td>
+                </tr>
+              </table>` : ""}
 
               <!-- Botón confirmar -->
               ${tokenConfirmacion ? `

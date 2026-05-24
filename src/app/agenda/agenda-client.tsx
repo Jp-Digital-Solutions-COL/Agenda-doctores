@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { CitaConRel, DoctorBasic, PacienteBasic } from "./types";
+import type { CitaConRel, DoctorBasic, HorarioCalendario, PacienteBasic } from "./types";
 import { getCitas, reagendar } from "./actions";
 import {
   startOfWeek,
@@ -36,7 +36,8 @@ interface Props {
   pacientes: PacienteBasic[];
   initialCitas: CitaConRel[];
   todayStr: string; // "YYYY-MM-DD"
-  lockedDoctor?: DoctorBasic; // cuando se pasa, bloquea la vista a este doctor
+  lockedDoctor?: DoctorBasic;
+  horarios?: HorarioCalendario[];
 }
 
 function makeNoon(dateStr: string): Date {
@@ -64,6 +65,7 @@ export default function AgendaClient({
   initialCitas,
   todayStr,
   lockedDoctor,
+  horarios = [],
 }: Props) {
   const todayDate = useMemo(() => makeNoon(todayStr), [todayStr]);
 
@@ -472,6 +474,7 @@ export default function AgendaClient({
             doctors={visibleDoctors}
             allDoctors={doctors}
             citas={citas}
+            horarios={horarios}
             onCitaClick={setDetailCita}
             onSlotClick={handleSlotClick}
             onReschedule={handleReschedule}
@@ -483,6 +486,7 @@ export default function AgendaClient({
             doctors={visibleDoctors}
             allDoctors={doctors}
             citas={citas}
+            horarios={horarios}
             onCitaClick={setDetailCita}
             onDayClick={handleDayClick}
             onSlotClick={handleSlotClick}

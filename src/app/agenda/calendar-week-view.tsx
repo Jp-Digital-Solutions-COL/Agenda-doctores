@@ -11,7 +11,7 @@ import {
   type DragMoveEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import type { CitaConRel, DoctorBasic } from "./types";
+import type { CitaConRel, DoctorBasic, HorarioCalendario } from "./types";
 import { ESTADO_CONFIG } from "./types";
 import { durationMinutes, formatTime, isSameDay, toDateStr, addDays } from "./utils";
 
@@ -126,6 +126,7 @@ interface Props {
   doctors: DoctorBasic[];
   allDoctors: DoctorBasic[];
   citas: CitaConRel[];
+  horarios?: HorarioCalendario[];
   onCitaClick: (c: CitaConRel) => void;
   onDayClick: (d: Date) => void;
   onSlotClick?: (day: Date, time: string) => void;
@@ -138,6 +139,7 @@ export default function CalendarWeekView({
   doctors,
   allDoctors,
   citas,
+  horarios = [],
   onCitaClick,
   onDayClick,
   onSlotClick,
@@ -323,6 +325,18 @@ export default function CalendarWeekView({
               const colGhost = ghost?.targetDayIdx === dayIdx ? ghost : null;
               const layout = computeDoctorLayout(dayCitas, doctors);
 
+              // Almuerzo blocks: one sub-band per doctor that has almuerzo on this weekday
+              const almuerzoBands = doctors
+                .flatMap((doc, i) => {
+                  const h = horarios.find(
+                    (h) => h.doctor_id === doc.id && h.dia_semana === day.getDay()
+                  );
+                  return h?.almuerzo_inicio && h?.almuerzo_fin
+                    ? [{ inicio: h.almuerzo_inicio.slice(0, 5), fin: h.almuerzo_fin.slice(0, 5), docIdx: i }]
+                    : [];
+                });
+              const alBandCount = almuerzoBands.length;
+
               return (
                 <div
                   key={toDateStr(day)}
@@ -337,6 +351,16 @@ export default function CalendarWeekView({
                   {/* Off-hours shading */}
                   <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: 0, height: (WORK_START - GRID_START) * HOUR_HEIGHT }} />
                   <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: (WORK_END - GRID_START) * HOUR_HEIGHT, height: (GRID_END - WORK_END) * HOUR_HEIGHT }} />
+
+                  {almuerzoBands.map((band, bi) => (
+                    <WeekAlmuerzoBlock
+                      key={`al-${band.docIdx}`}
+                      inicio={band.inicio}
+                      fin={band.fin}
+                      leftPct={(bi / alBandCount) * 100}
+                      widthPct={(1 / alBandCount) * 100}
+                    />
+                  ))}
 
                   {colGhost && (
                     <WeekGhost ghost={colGhost} citas={citas} allDoctors={allDoctors} />
@@ -443,6 +467,41 @@ function WeekCitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function WeekAlmuerzoBlock({
+  inicio,
+  fin,
+  leftPct,
+  widthPct,
+}: {
+  inicio: string;
+  fin: string;
+  leftPct: number;
+  widthPct: number;
+}) {
+  const [ih, im] = inicio.split(":").map(Number);
+  const [fh, fm] = fin.split(":").map(Number);
+  const top = (ih * 60 + im - GRID_START * 60) * (HOUR_HEIGHT / 60);
+  const h = Math.max(((fh * 60 + fm) - (ih * 60 + im)) * (HOUR_HEIGHT / 60), 12);
+  if (top + h <= 0 || top >= TOTAL_H) return null;
+  return (
+    <div
+      className="absolute rounded overflow-hidden pointer-events-none"
+      style={{
+        top: Math.max(0, top),
+        height: h,
+        left: `calc(${leftPct}% + 1px)`,
+        width: `calc(${widthPct}% - 2px)`,
+        background: "rgba(241,245,249,0.96)",
+        borderLeft: "3px solid #cbd5e1",
+      }}
+    >
+      <p className="text-[9px] text-slate-400 font-medium px-1 pt-0.5 leading-tight select-none">
+        Almuerzo
+      </p>
+    </div>
   );
 }
 
