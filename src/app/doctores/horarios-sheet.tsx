@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { getHorarios, saveHorarios } from "./actions";
 import {
   DIAS_SEMANA,
-  DURACIONES_CITA,
   DEFAULT_HORARIO_DIA,
   type Doctor,
   type HorarioDia,
@@ -19,13 +18,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const TIME_INPUT_CLASS =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
@@ -46,7 +38,6 @@ function buildInitialForm(
           enabled: true,
           hora_inicio: h.hora_inicio.slice(0, 5),
           hora_fin: h.hora_fin.slice(0, 5),
-          duracion_cita: h.duracion_cita,
           almuerzo_inicio: h.almuerzo_inicio ? h.almuerzo_inicio.slice(0, 5) : "",
           almuerzo_fin: h.almuerzo_fin ? h.almuerzo_fin.slice(0, 5) : "",
         }
@@ -181,7 +172,7 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
                     {d.enabled && (
                       <div className="mt-3 space-y-3">
                         {/* Jornada */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">
                               Hora inicio
@@ -208,29 +199,6 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
                               }
                               className={TIME_INPUT_CLASS}
                             />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">
-                              Duración de cita
-                            </Label>
-                            <Select
-                              value={String(d.duracion_cita)}
-                              onValueChange={(v) =>
-                                updateDia(dia.value, { duracion_cita: Number(v) })
-                              }
-                            >
-                              <SelectTrigger className="h-9">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {DURACIONES_CITA.map((min) => (
-                                  <SelectItem key={min} value={String(min)}>
-                                    {min} min
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
 

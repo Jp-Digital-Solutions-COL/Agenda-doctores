@@ -15,7 +15,6 @@ export type Horario = {
   dia_semana: number;
   hora_inicio: string;
   hora_fin: string;
-  duracion_cita: number;
   almuerzo_inicio: string | null;
   almuerzo_fin: string | null;
 };
@@ -24,7 +23,6 @@ export type HorarioDia = {
   enabled: boolean;
   hora_inicio: string; // "HH:MM"
   hora_fin: string;
-  duracion_cita: number;
   almuerzo_inicio: string; // "HH:MM" or ""
   almuerzo_fin: string;
 };
@@ -39,13 +37,10 @@ export const DIAS_SEMANA = [
   { value: 6, label: "Sábado" },
 ] as const;
 
-export const DURACIONES_CITA = [15, 20, 30, 45, 60, 90] as const;
-
 export const DEFAULT_HORARIO_DIA: HorarioDia = {
   enabled: false,
   hora_inicio: "08:00",
   hora_fin: "17:00",
-  duracion_cita: 30,
   almuerzo_inicio: "",
   almuerzo_fin: "",
 };

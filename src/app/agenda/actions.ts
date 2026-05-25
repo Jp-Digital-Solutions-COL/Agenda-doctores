@@ -92,12 +92,12 @@ export async function getHorasDisponibles(
 
   const { data: horarioData } = await supabase
     .from("horarios")
-    .select("hora_inicio, hora_fin, duracion_cita, almuerzo_inicio, almuerzo_fin")
+    .select("hora_inicio, hora_fin, almuerzo_inicio, almuerzo_fin")
     .eq("doctor_id", doctorId)
     .eq("dia_semana", diaSemana)
     .single();
 
-  const horario = horarioData ?? { hora_inicio: "07:00", hora_fin: "20:00", duracion_cita: 30, almuerzo_inicio: null, almuerzo_fin: null };
+  const horario = horarioData ?? { hora_inicio: "07:00", hora_fin: "20:00", almuerzo_inicio: null, almuerzo_fin: null };
 
   const dayEndISO = new Date(
     new Date(dayStartISO).getTime() + 24 * 3600 * 1000
@@ -119,7 +119,7 @@ export async function getHorasDisponibles(
   const [eh, em] = horario.hora_fin.split(":").map(Number);
   const startMin = sh * 60 + sm;
   const endMin = eh * 60 + em;
-  const dur = horario.duracion_cita;
+  const dur = 30;
 
   const dayStartMs = new Date(dayStartISO).getTime();
   const slots: string[] = [];

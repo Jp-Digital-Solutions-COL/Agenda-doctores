@@ -110,7 +110,6 @@ export async function saveHorarios(
       dia_semana: Number(dia),
       hora_inicio: d.hora_inicio,
       hora_fin: d.hora_fin,
-      duracion_cita: d.duracion_cita,
       almuerzo_inicio: d.almuerzo_inicio || null,
       almuerzo_fin: d.almuerzo_fin || null,
     }));
