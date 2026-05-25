@@ -180,7 +180,7 @@ export async function sendConfirmacionCita(params: {
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: `${titulo} – Dr. ${doctor}`,
+    subject: `${titulo} – Dr. ${doctor} – ${fecha} ${hora}`,
     html,
   });
 
