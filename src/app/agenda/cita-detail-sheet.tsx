@@ -49,7 +49,7 @@ function urlRecordatorio(tel: string, paciente: string, doctor: string, fecha: s
   let msg =
     `Hola ${paciente}, le recordamos que tiene una cita con el Dr. ${doctor} ` +
     `el ${fecha} a las ${hora}. ¿Puede confirmarnos su asistencia? Gracias.`;
-  if (lugar?.nombre) msg += `\n\n📍 ${lugar.nombre}`;
+  if (lugar?.nombre) msg += `\n\n-> ${lugar.nombre}`;
   if (lugar?.direccion) msg += `\n${lugar.direccion}`;
   return `https://wa.me/${normalizarTelefono(tel)}?text=${encodeURIComponent(msg)}`;
 }
