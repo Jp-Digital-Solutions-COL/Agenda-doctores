@@ -62,13 +62,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/inicio", request.url));
   }
 
-  // Doctores: solo pueden acceder a /doctor
-  if (isDoctor && !pathname.startsWith("/doctor")) {
+  // Doctores: solo pueden acceder a /doctor (o /doctor/*)
+  const isDoctorRoute = pathname === "/doctor" || pathname.startsWith("/doctor/");
+  if (isDoctor && !isDoctorRoute) {
     return NextResponse.redirect(new URL("/doctor", request.url));
   }
 
-  // No-doctores no pueden acceder a /doctor
-  if (!isDoctor && pathname.startsWith("/doctor")) {
+  // No-doctores no pueden acceder a /doctor (o /doctor/*)
+  if (!isDoctor && isDoctorRoute) {
     return NextResponse.redirect(new URL("/inicio", request.url));
   }
 
