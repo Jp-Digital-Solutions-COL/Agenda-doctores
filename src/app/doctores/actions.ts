@@ -121,11 +121,11 @@ export async function saveHorarios(
     .delete()
     .eq("doctor_id", doctorId);
 
-  if (delError) return { error: "No se pudieron actualizar los horarios." };
+  if (delError) return { error: delError.message };
 
   if (toInsert.length > 0) {
     const { error } = await supabase.from("horarios").insert(toInsert);
-    if (error) return { error: "No se pudieron guardar los horarios." };
+    if (error) return { error: error.message };
   }
 
   revalidatePath("/doctores");
