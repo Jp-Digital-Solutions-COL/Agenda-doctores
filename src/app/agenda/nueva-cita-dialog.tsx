@@ -227,17 +227,24 @@ export default function NuevaCitaDialog({
                   <Label className="text-sm">
                     Hora <span className="text-destructive">*</span>
                   </Label>
-                  {/* Sede badge — visible cuando hay slots y el doctor tiene sede configurada ese día */}
-                  {!loadingSlots && slots.length > 0 && ubicacionDelDia && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      {ubicacionDelDia.nombre}
-                      {ubicacionDelDia.direccion && (
-                        <span className="text-teal-600/70 hidden sm:inline">
-                          · {ubicacionDelDia.direccion}
-                        </span>
-                      )}
-                    </span>
+                  {/* Sede badge — visible cuando hay slots */}
+                  {!loadingSlots && slots.length > 0 && (
+                    ubicacionDelDia ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {ubicacionDelDia.nombre}
+                        {ubicacionDelDia.direccion && (
+                          <span className="text-teal-600/70 hidden sm:inline">
+                            · {ubicacionDelDia.direccion}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        Consultorio principal
+                      </span>
+                    )
                   )}
                 </div>
                 {!doctorId || !fecha ? (
