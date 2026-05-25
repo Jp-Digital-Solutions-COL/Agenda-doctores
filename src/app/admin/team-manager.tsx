@@ -25,6 +25,7 @@ import {
 import { convertToWebP, uploadToCloudinary } from "@/lib/cloudinary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -320,8 +321,7 @@ function SecretariaRow({
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Nueva contraseña (opcional)</Label>
-                  <Input
-                    type="password"
+                  <PasswordInput
                     minLength={6}
                     placeholder="Dejar vacío para no cambiar"
                     value={editPassword}
@@ -593,8 +593,7 @@ function SecretariasTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) 
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Contraseña</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 required
                 minLength={6}
                 placeholder="Mínimo 6 caracteres"
@@ -1359,8 +1358,7 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Contraseña</Label>
-                          <Input
-                            type="password"
+                          <PasswordInput
                             required
                             minLength={6}
                             placeholder="Mínimo 6 caracteres"
