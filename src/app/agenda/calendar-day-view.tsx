@@ -29,6 +29,10 @@ const WORK_END = 18;
 function topPx(date: Date) {
   return (date.getHours() * 60 + date.getMinutes() - GRID_START * 60) * (HOUR_HEIGHT / 60);
 }
+function timeTopPx(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return (h * 60 + m - GRID_START * 60) * (HOUR_HEIGHT / 60);
+}
 function heightPx(dur: number) {
   return Math.max(dur * (HOUR_HEIGHT / 60), 28);
 }
@@ -323,9 +327,21 @@ export default function CalendarDayView({
                     onSlotClick(date, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                   }}
                 >
-                  {/* Off-hours shading */}
-                  <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: 0, height: (WORK_START - GRID_START) * HOUR_HEIGHT }} />
-                  <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: (WORK_END - GRID_START) * HOUR_HEIGHT, height: (GRID_END - WORK_END) * HOUR_HEIGHT }} />
+                  {/* Off-hours shading based on doctor's actual schedule */}
+                  {(() => {
+                    const wTop = horarioDia?.hora_inicio
+                      ? Math.max(0, timeTopPx(horarioDia.hora_inicio.slice(0, 5)))
+                      : (WORK_START - GRID_START) * HOUR_HEIGHT;
+                    const wBottom = horarioDia?.hora_fin
+                      ? Math.min(TOTAL_H, timeTopPx(horarioDia.hora_fin.slice(0, 5)))
+                      : (WORK_END - GRID_START) * HOUR_HEIGHT;
+                    return (
+                      <>
+                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: 0, height: wTop }} />}
+                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                      </>
+                    );
+                  })()}
 
                   {docCitas.length === 0 && !showHeaders && (
                     <div className="absolute flex items-center justify-center pointer-events-none left-0 right-0" style={{ top: (WORK_START - GRID_START) * HOUR_HEIGHT, height: (WORK_END - WORK_START) * HOUR_HEIGHT }}>

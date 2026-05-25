@@ -28,6 +28,10 @@ const WORK_END = 18;
 function topPx(date: Date): number {
   return (date.getHours() * 60 + date.getMinutes() - GRID_START * 60) * (HOUR_HEIGHT / 60);
 }
+function timeTopPx(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return (h * 60 + m - GRID_START * 60) * (HOUR_HEIGHT / 60);
+}
 function heightPx(dur: number): number {
   return Math.max(dur * (HOUR_HEIGHT / 60), 24);
 }
@@ -348,9 +352,24 @@ export default function CalendarWeekView({
                     onSlotClick(day, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                   }}
                 >
-                  {/* Off-hours shading */}
-                  <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: 0, height: (WORK_START - GRID_START) * HOUR_HEIGHT }} />
-                  <div className="absolute left-0 right-0 bg-muted/40 pointer-events-none" style={{ top: (WORK_END - GRID_START) * HOUR_HEIGHT, height: (GRID_END - WORK_END) * HOUR_HEIGHT }} />
+                  {/* Off-hours shading: solo cuando hay un doctor seleccionado */}
+                  {doctors.length === 1 && (() => {
+                    const h = horarios.find(
+                      (h) => h.doctor_id === doctors[0].id && h.dia_semana === day.getDay()
+                    );
+                    const wTop = h?.hora_inicio
+                      ? Math.max(0, timeTopPx(h.hora_inicio.slice(0, 5)))
+                      : (WORK_START - GRID_START) * HOUR_HEIGHT;
+                    const wBottom = h?.hora_fin
+                      ? Math.min(TOTAL_H, timeTopPx(h.hora_fin.slice(0, 5)))
+                      : (WORK_END - GRID_START) * HOUR_HEIGHT;
+                    return (
+                      <>
+                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: 0, height: wTop }} />}
+                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                      </>
+                    );
+                  })()}
 
                   {almuerzoBands.map((band, bi) => (
                     <WeekAlmuerzoBlock

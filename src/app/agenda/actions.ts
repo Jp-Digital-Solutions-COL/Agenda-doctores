@@ -448,7 +448,7 @@ export async function getHorariosParaCalendario(
   const supabase = await createClient();
   const { data } = await supabase
     .from("horarios")
-    .select("doctor_id, dia_semana, almuerzo_inicio, almuerzo_fin")
+    .select("doctor_id, dia_semana, hora_inicio, hora_fin, almuerzo_inicio, almuerzo_fin")
     .in("doctor_id", doctorIds);
   return (data ?? []) as HorarioCalendario[];
 }

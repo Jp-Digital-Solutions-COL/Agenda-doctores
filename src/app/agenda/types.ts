@@ -104,7 +104,9 @@ export const ESTADO_CONFIG: Record<
 export type HorarioCalendario = {
   doctor_id: string;
   dia_semana: number;
-  almuerzo_inicio: string | null; // "HH:MM:SS" from DB
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  almuerzo_inicio: string | null;
   almuerzo_fin: string | null;
 };
 
