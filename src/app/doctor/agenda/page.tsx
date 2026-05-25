@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCitas, getPacientesBasic, getHorariosParaCalendario } from "@/app/agenda/actions";
 import AgendaClient from "@/app/agenda/agenda-client";
-import { startOfWeek, endOfWeek, toDateStr } from "@/app/agenda/utils";
+import { startOfWeek, endOfWeek, toDateStr, todayBogota } from "@/app/agenda/utils";
 import type { DoctorBasic } from "@/app/agenda/types";
 
 export default async function DoctorAgendaPage() {
@@ -40,7 +40,7 @@ export default async function DoctorAgendaPage() {
     bloqueado_pago: (doctorData.bloqueado_pago as boolean) ?? false,
   };
 
-  const today = new Date();
+  const today = todayBogota();
   const ws = startOfWeek(today);
   const we = endOfWeek(today);
 

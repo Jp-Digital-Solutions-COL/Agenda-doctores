@@ -21,7 +21,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -286,7 +285,11 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
                               }
                             >
                               <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Consultorio principal" />
+                                <span className={!d.ubicacion_id ? "text-muted-foreground text-sm" : "text-sm"}>
+                                  {d.ubicacion_id
+                                    ? (ubicaciones.find(u => u.id === d.ubicacion_id)?.nombre ?? "Consultorio principal")
+                                    : "Consultorio principal"}
+                                </span>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="">Consultorio principal</SelectItem>

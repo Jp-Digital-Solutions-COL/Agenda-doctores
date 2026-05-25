@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { addDays, toDateStr, startOfWeek, endOfWeek } from "@/app/agenda/utils";
+import { addDays, toDateStr, startOfWeek, endOfWeek, todayBogota } from "@/app/agenda/utils";
 import { ESTADO_CONFIG } from "@/app/agenda/types";
 import { CalendarDays, UserX, XCircle, AlertCircle, Clock, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import DoctorConfig from "./doctor-config";
 
 const TZ = "America/Bogota";
 
@@ -97,7 +98,7 @@ export default async function DoctorPage() {
   const doctorId = doctorData.id as string;
   const doctorNombre = doctorData.nombre as string;
 
-  const hoy = new Date();
+  const hoy = todayBogota();
   const hoyStr = toDateStr(hoy);
   const manana = addDays(hoy, 1);
   const mananaStr = toDateStr(manana);
@@ -207,6 +208,12 @@ export default async function DoctorPage() {
             >
               Agenda
             </Link>
+            <Link
+              href="/doctor/adelantar"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
+            >
+              Adelantar
+            </Link>
           </nav>
           <form action={signOut} className="ml-auto">
             <Button variant="ghost" size="sm" type="submit" className="gap-1.5 text-muted-foreground">
@@ -225,6 +232,9 @@ export default async function DoctorPage() {
             {fechaLabel()}
           </p>
         </div>
+
+        {/* Acciones rápidas */}
+        <DoctorConfig doctorId={doctorId} doctorNombre={doctorNombre} />
 
         {/* Tarjetas de resumen */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

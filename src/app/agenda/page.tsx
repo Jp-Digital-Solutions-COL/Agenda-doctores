@@ -7,7 +7,7 @@ import {
   getHorariosParaCalendario,
 } from "./actions";
 import AgendaClient from "./agenda-client";
-import { startOfWeek, endOfWeek, toDateStr } from "./utils";
+import { startOfWeek, endOfWeek, toDateStr, todayBogota } from "./utils";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -23,7 +23,7 @@ export default async function AgendaPage() {
     .single();
   if (!profile?.consultorio_id) redirect("/onboarding");
 
-  const today = new Date();
+  const today = todayBogota();
   const ws = startOfWeek(today);
   const we = endOfWeek(today);
 

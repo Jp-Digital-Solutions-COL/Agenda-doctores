@@ -10,6 +10,18 @@ export function formatTime(date: Date): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Fecha actual en zona horaria America/Bogota como Date con métodos locales correctos. */
+export function todayBogota(): Date {
+  const s = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // "YYYY-MM-DD"
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** "YYYY-MM-DD" a partir de un Date (fecha local). */
 export function toDateStr(date: Date): string {
   const y = date.getFullYear();
