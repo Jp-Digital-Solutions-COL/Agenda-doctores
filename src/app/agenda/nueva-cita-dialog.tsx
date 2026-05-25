@@ -625,7 +625,7 @@ export default function NuevaCitaDialog({
             </AlertDialogTitle>
             <AlertDialogDescription>
               La cita se cruza con otra ya agendada para este doctor.
-              ¿Está de acuerdo en agendarla de todas formas como cita extra?
+              ¿Está de acuerdo en agendarla de todas formas?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
