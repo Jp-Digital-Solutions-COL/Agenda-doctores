@@ -268,7 +268,7 @@ export default function CalendarWeekView({
                 key={toDateStr(day)}
                 onClick={() => onDayClick(day)}
                 aria-label={`Ver día ${day.getDate()}`}
-                className={`flex-1 flex flex-col items-center py-2 transition-colors hover:bg-muted/50 border-l first:border-l-0 min-w-0 ${isToday ? "bg-primary/5" : ""}`}
+                className={`flex-1 flex flex-col items-center py-2 transition-colors hover:bg-muted/80 border-l first:border-l-0 min-w-0 ${isToday ? "bg-primary/5" : ""}`}
               >
                 <span className={`text-[10px] uppercase font-semibold tracking-wider ${isToday ? "text-primary" : "text-foreground/55"}`}>
                   {new Intl.DateTimeFormat("es-MX", { weekday: "short" }).format(day)}
@@ -291,7 +291,7 @@ export default function CalendarWeekView({
             {HOURS.map((h) => (
               <div
                 key={h}
-                className={`relative border-t border-border/20 ${h < WORK_START || h >= WORK_END ? "bg-muted/50" : ""}`}
+                className={`relative border-t border-border/20 ${h < WORK_START || h >= WORK_END ? "bg-muted/80" : ""}`}
                 style={{ height: HOUR_HEIGHT }}
               >
                 <span className={`absolute -top-2.5 right-2 text-[10px] tabular-nums select-none ${h < WORK_START || h >= WORK_END ? "text-muted-foreground/40" : "text-muted-foreground/70"}`}>
@@ -365,8 +365,8 @@ export default function CalendarWeekView({
                       : (WORK_END - GRID_START) * HOUR_HEIGHT;
                     return (
                       <>
-                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: 0, height: wTop }} />}
-                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: 0, height: wTop }} />}
+                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
                       </>
                     );
                   })()}

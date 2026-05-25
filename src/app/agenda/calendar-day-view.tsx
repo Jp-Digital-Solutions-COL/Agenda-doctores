@@ -276,7 +276,7 @@ export default function CalendarDayView({
             {HOURS.map((h) => (
               <div
                 key={h}
-                className={`relative border-t border-border/20 ${h < WORK_START || h >= WORK_END ? "bg-muted/50" : ""}`}
+                className={`relative border-t border-border/20 ${h < WORK_START || h >= WORK_END ? "bg-muted/80" : ""}`}
                 style={{ height: HOUR_HEIGHT }}
               >
                 <span className={`absolute -top-2.5 right-2 text-[10px] tabular-nums select-none ${h < WORK_START || h >= WORK_END ? "text-muted-foreground/40" : "text-muted-foreground/70"}`}>
@@ -337,8 +337,8 @@ export default function CalendarDayView({
                       : (WORK_END - GRID_START) * HOUR_HEIGHT;
                     return (
                       <>
-                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: 0, height: wTop }} />}
-                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/50 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: 0, height: wTop }} />}
+                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
                       </>
                     );
                   })()}
