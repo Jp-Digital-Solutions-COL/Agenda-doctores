@@ -106,8 +106,18 @@ export default function NuevaCitaDialog({
     });
   }, [doctorId, fecha]);
 
-  const selectedSlot = slots.find((s) => s.hora === hora);
-  const slotOcupado = selectedSlot?.ocupado ?? false;
+  // Verifica si la duración elegida cruza algún slot ocupado, no solo el de inicio
+  const slotOcupado = useMemo(() => {
+    if (!hora) return false;
+    const [h, m] = hora.split(":").map(Number);
+    const startMin = h * 60 + m;
+    const endMin = startMin + duracion;
+    return slots.some((s) => {
+      const [sh, sm] = s.hora.split(":").map(Number);
+      const sMin = sh * 60 + sm;
+      return s.ocupado && sMin < endMin && sMin + 30 > startMin;
+    });
+  }, [hora, duracion, slots]);
 
   const filteredPacientes = useMemo(() => {
     const q = pacienteSearch.trim().toLowerCase();
@@ -320,7 +330,7 @@ export default function NuevaCitaDialog({
                       {slots.some((s) => s.ocupado) && (
                         <div className="flex items-center gap-1.5 text-xs text-amber-600">
                           <span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-400 shrink-0" />
-                          Hora ocupada (cita extra permitida)
+                          Hora ocupada
                         </div>
                       )}
                       {slotOcupado && (
