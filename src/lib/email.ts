@@ -25,11 +25,12 @@ export async function sendConfirmacionCita(params: {
   consultorioNombre?: string | null;
   consultorioDireccion?: string | null;
   consultorioTelefono?: string | null;
+  consultorioMapsUrl?: string | null;
 }): Promise<{ error?: string }> {
   const { to, paciente, doctor, especialidad, fotoUrl, fecha, hora, motivo, secretariaWA, secretariaEmail } = params;
   const titulo = params.titulo ?? "Recordatorio de cita";
   const intro = params.intro ?? "le recordamos los detalles de su próxima cita";
-  const { tokenConfirmacion, consultorioNombre, consultorioDireccion, consultorioTelefono } = params;
+  const { tokenConfirmacion, consultorioNombre, consultorioDireccion, consultorioTelefono, consultorioMapsUrl } = params;
 
   const fotoSrc = fotoUrl ?? `${APP_URL}/Med-Agenda_solo_logo.png`;
   const isLogoFallback = !fotoUrl;
@@ -115,6 +116,9 @@ export async function sendConfirmacionCita(params: {
                     ${consultorioNombre ? `<br/><span style="font-size:15px;font-weight:600;color:#111827;">${consultorioNombre}</span>` : ""}
                     ${consultorioDireccion ? `<br/><span style="font-size:14px;color:#374151;">${consultorioDireccion}</span>` : ""}
                     ${consultorioTelefono ? `<br/><span style="font-size:13px;color:#6b7280;">Tel: ${consultorioTelefono}</span>` : ""}
+                    ${consultorioMapsUrl ? `<br/><a href="${consultorioMapsUrl}" target="_blank" style="display:inline-block;margin-top:8px;padding:6px 14px;background:#ffffff;border:1px solid #dadce0;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;color:#1A73E8;">
+                      📍 Cómo llegar
+                    </a>` : ""}
                   </td>
                 </tr>
               </table>` : ""}

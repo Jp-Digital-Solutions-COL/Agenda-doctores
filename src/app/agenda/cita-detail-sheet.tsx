@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { updateEstado, reagendar, deleteCita, getHorasDisponibles, sendConfirmacionEmail } from "./actions";
+import { updateEstado, reagendar, deleteCita, getHorasDisponibles, sendConfirmacionEmail, getMapsUrlParaCita } from "./actions";
 import type { CitaConRel, EstadoCita } from "./types";
 import { ESTADO_CONFIG } from "./types";
 import { durationMinutes, formatTime, toDateStr } from "./utils";
@@ -45,10 +45,11 @@ function normalizarTelefono(tel: string): string {
   return digits.startsWith("57") ? digits : "57" + digits;
 }
 
-function urlRecordatorio(tel: string, paciente: string, doctor: string, fecha: string, hora: string) {
-  const msg =
+function urlRecordatorio(tel: string, paciente: string, doctor: string, fecha: string, hora: string, mapsUrl?: string | null) {
+  let msg =
     `Hola ${paciente}, le recordamos que tiene una cita con el Dr. ${doctor} ` +
     `el ${fecha} a las ${hora}. ¿Puede confirmarnos su asistencia? Gracias.`;
+  if (mapsUrl) msg += `\n\nCómo llegar: ${mapsUrl}`;
   return `https://wa.me/${normalizarTelefono(tel)}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -85,6 +86,9 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState("");
 
+  // Maps URL para mensaje de WhatsApp
+  const [mapsUrl, setMapsUrl] = useState<string | null>(null);
+
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -99,6 +103,8 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
     setReschedHora("");
     setReschedDur(durationMinutes(cita.inicio, cita.fin));
     setReschedSlots([]);
+    setMapsUrl(null);
+    getMapsUrlParaCita(cita.doctores.id, cita.id).then(setMapsUrl);
   }, [cita?.id]);
 
   // Load slots when date changes in reagendar mode
@@ -244,7 +250,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
                   {tel && (
                     <div className="flex gap-2">
                       <a
-                        href={urlRecordatorio(tel, cita.pacientes!.nombre, cita.doctores.nombre, dateLabel, formatTime(dt))}
+                        href={urlRecordatorio(tel, cita.pacientes!.nombre, cita.doctores.nombre, dateLabel, formatTime(dt), mapsUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={buttonVariants({ variant: "outline", size: "sm" }) +

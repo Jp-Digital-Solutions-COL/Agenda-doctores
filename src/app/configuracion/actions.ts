@@ -9,6 +9,7 @@ export type ConsultorioConfig = {
   nombre: string | null;
   direccion: string | null;
   telefono_contacto: string | null;
+  maps_url: string | null;
 };
 
 export async function getConsultorioConfig(): Promise<ConsultorioConfig | null> {
@@ -25,7 +26,7 @@ export async function getConsultorioConfig(): Promise<ConsultorioConfig | null> 
 
   const { data } = await supabase
     .from("consultorios")
-    .select("id, nombre, direccion, telefono_contacto")
+    .select("id, nombre, direccion, telefono_contacto, maps_url")
     .eq("id", profile.consultorio_id)
     .single();
 
@@ -36,6 +37,7 @@ export async function updateConsultorioConfig(input: {
   nombre: string;
   direccion: string;
   telefono_contacto: string;
+  maps_url: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,6 +59,7 @@ export async function updateConsultorioConfig(input: {
       nombre: input.nombre.trim() || null,
       direccion: input.direccion.trim() || null,
       telefono_contacto: input.telefono_contacto.trim() || null,
+      maps_url: input.maps_url.trim() || null,
     })
     .eq("id", profile.consultorio_id);
 

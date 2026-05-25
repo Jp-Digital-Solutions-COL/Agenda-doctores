@@ -26,6 +26,7 @@ export default function SedesSheet({ doctor, onClose }: Props) {
   const [newNombre, setNewNombre] = useState("");
   const [newDireccion, setNewDireccion] = useState("");
   const [newTelefono, setNewTelefono] = useState("");
+  const [newMapsUrl, setNewMapsUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,7 +45,7 @@ export default function SedesSheet({ doctor, onClose }: Props) {
     if (!doctor || !newNombre.trim()) return;
     setSaving(true);
     setError("");
-    const result = await createUbicacion(doctor.id, newNombre, newDireccion || null, newTelefono || null);
+    const result = await createUbicacion(doctor.id, newNombre, newDireccion || null, newTelefono || null, newMapsUrl || null);
     setSaving(false);
     if (result.error) {
       setError(result.error);
@@ -53,6 +54,7 @@ export default function SedesSheet({ doctor, onClose }: Props) {
       setNewNombre("");
       setNewDireccion("");
       setNewTelefono("");
+      setNewMapsUrl("");
       setShowAdd(false);
     }
   }
@@ -140,13 +142,20 @@ export default function SedesSheet({ doctor, onClose }: Props) {
                     type="tel"
                     className="h-8 text-sm"
                   />
+                  <Input
+                    value={newMapsUrl}
+                    onChange={(e) => setNewMapsUrl(e.target.value)}
+                    placeholder="Link Google Maps (opcional)"
+                    type="url"
+                    className="h-8 text-sm"
+                  />
                   {error && <p className="text-xs text-destructive">{error}</p>}
                   <div className="flex gap-2 pt-1">
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1 h-8 text-xs"
-                      onClick={() => { setShowAdd(false); setError(""); setNewNombre(""); setNewDireccion(""); setNewTelefono(""); }}
+                      onClick={() => { setShowAdd(false); setError(""); setNewNombre(""); setNewDireccion(""); setNewTelefono(""); setNewMapsUrl(""); }}
                       disabled={saving}
                     >
                       Cancelar

@@ -15,6 +15,7 @@ export type Ubicacion = {
   nombre: string;
   direccion: string | null;
   telefono: string | null;
+  maps_url: string | null;
 };
 
 export type Horario = {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Save } from "lucide-react";
+import { Building2, Save, Map } from "lucide-react";
 
 interface Props {
   config: ConsultorioConfig | null;
@@ -16,6 +16,7 @@ export default function ConfiguracionClient({ config }: Props) {
   const [nombre, setNombre] = useState(config?.nombre ?? "");
   const [direccion, setDireccion] = useState(config?.direccion ?? "");
   const [telefono, setTelefono] = useState(config?.telefono_contacto ?? "");
+  const [mapsUrl, setMapsUrl] = useState(config?.maps_url ?? "");
   const [saving, setSaving] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
@@ -26,6 +27,7 @@ export default function ConfiguracionClient({ config }: Props) {
       nombre,
       direccion,
       telefono_contacto: telefono,
+      maps_url: mapsUrl,
     });
     setSaving(false);
     if (result.error) {
@@ -83,6 +85,23 @@ export default function ConfiguracionClient({ config }: Props) {
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mapsUrl" className="flex items-center gap-1.5">
+              <Map className="h-3.5 w-3.5 text-muted-foreground" />
+              Link de Google Maps
+            </Label>
+            <Input
+              id="mapsUrl"
+              placeholder="https://maps.app.goo.gl/..."
+              value={mapsUrl}
+              onChange={(e) => setMapsUrl(e.target.value)}
+              type="url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Opcional. Se incluirá en los correos y mensajes de recordatorio.
+            </p>
           </div>
 
           {mensaje && (

@@ -138,7 +138,7 @@ export async function getUbicaciones(doctorId: string): Promise<Ubicacion[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("ubicaciones_doctor")
-    .select("id, doctor_id, nombre, direccion, telefono")
+    .select("id, doctor_id, nombre, direccion, telefono, maps_url")
     .eq("doctor_id", doctorId)
     .order("created_at");
   if (error) return [];
@@ -149,7 +149,8 @@ export async function createUbicacion(
   doctorId: string,
   nombre: string,
   direccion: string | null,
-  telefono: string | null
+  telefono: string | null,
+  mapsUrl: string | null = null
 ): Promise<{ data?: Ubicacion; error?: string }> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -159,8 +160,9 @@ export async function createUbicacion(
       nombre: nombre.trim(),
       direccion: direccion?.trim() || null,
       telefono: telefono?.trim() || null,
+      maps_url: mapsUrl?.trim() || null,
     })
-    .select("id, doctor_id, nombre, direccion, telefono")
+    .select("id, doctor_id, nombre, direccion, telefono, maps_url")
     .single();
 
   if (error) return { error: error.message };
