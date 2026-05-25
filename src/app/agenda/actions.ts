@@ -86,7 +86,7 @@ export async function getHorasDisponibles(
   fecha: string,       // "YYYY-MM-DD" — para calcular dia_semana
   dayStartISO: string, // UTC ISO de medianoche local del día
   citaIdExcluir?: string
-): Promise<{ slots: string[]; duracionCita: number; ubicacion: UbicacionInfo }> {
+): Promise<{ slots: { hora: string; ocupado: boolean }[]; duracionCita: number; ubicacion: UbicacionInfo }> {
   const supabase = await createClient();
 
   const [y, mo, d] = fecha.split("-").map(Number);
@@ -124,7 +124,7 @@ export async function getHorasDisponibles(
   const dur = 30;
 
   const dayStartMs = new Date(dayStartISO).getTime();
-  const slots: string[] = [];
+  const slots: { hora: string; ocupado: boolean }[] = [];
 
   // Parse almuerzo to minutes (DB returns "HH:MM:SS", we need minutes-since-midnight)
   function hmToMin(t: string) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
@@ -139,17 +139,16 @@ export async function getHorasDisponibles(
     const slotStartMs = dayStartMs + min * 60000;
     const slotEndMs = dayStartMs + (min + dur) * 60000;
 
-    const conflict = (ocupadas ?? []).some((c) => {
+    const ocupado = (ocupadas ?? []).some((c) => {
       const cStartMs = new Date(c.inicio).getTime();
       const cEndMs = new Date(c.fin).getTime();
       return slotStartMs < cEndMs && slotEndMs > cStartMs;
     });
 
-    if (!conflict) {
-      slots.push(
-        `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`
-      );
-    }
+    slots.push({
+      hora: `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`,
+      ocupado,
+    });
   }
 
   const ubicacion = (horarioData as { ubicaciones_doctor?: UbicacionInfo } | null)?.ubicaciones_doctor ?? null;

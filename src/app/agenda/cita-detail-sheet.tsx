@@ -73,7 +73,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
   const [reschedFecha, setReschedFecha] = useState("");
   const [reschedHora, setReschedHora] = useState("");
   const [reschedDur, setReschedDur] = useState(30);
-  const [reschedSlots, setReschedSlots] = useState<string[]>([]);
+  const [reschedSlots, setReschedSlots] = useState<{ hora: string; ocupado: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Delete
@@ -109,6 +109,7 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
     const [y, mo, d] = reschedFecha.split("-").map(Number);
     getHorasDisponibles(cita.doctor_id, reschedFecha, new Date(y, mo - 1, d).toISOString(), cita.id).then(
       ({ slots }) => { setReschedSlots(slots); setLoadingSlots(false); }
+
     );
   }, [reschedFecha, action, cita?.doctor_id, cita?.id]);
 
@@ -382,20 +383,30 @@ export default function CitaDetailSheet({ cita, onClose, onUpdate }: Props) {
                       <p className="text-xs text-muted-foreground py-1">No hay horarios disponibles para esta fecha.</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {reschedSlots.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => setReschedHora(s)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                              reschedHora === s
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background border-input hover:bg-muted"
-                            }`}
-                          >
-                            {s}
-                          </button>
-                        ))}
+                        {reschedSlots.map((s) => {
+                          const isSelected = reschedHora === s.hora;
+                          let cls = "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ";
+                          if (s.ocupado) {
+                            cls += isSelected
+                              ? "bg-amber-500 text-white border-amber-500"
+                              : "bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100";
+                          } else {
+                            cls += isSelected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-input hover:bg-muted";
+                          }
+                          return (
+                            <button
+                              key={s.hora}
+                              type="button"
+                              onClick={() => setReschedHora(s.hora)}
+                              className={cls}
+                              title={s.ocupado ? "Hora ocupada — cita extra" : undefined}
+                            >
+                              {s.hora}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
