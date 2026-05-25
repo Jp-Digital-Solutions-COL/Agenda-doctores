@@ -525,7 +525,7 @@ export async function resetPasswordForUser(
 ): Promise<{ error?: string }> {
   await assertSuperadmin();
   const admin = createAdminClient();
-  const redirectTo = `${getAppUrl()}/auth/callback?next=/restablecer-contrasena`;
+  const redirectTo = `${getAppUrl()}/restablecer-contrasena`;
   const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) return { error: error.message };
   return {};
@@ -550,7 +550,7 @@ export async function resetPasswordForDoctor(
   const email = userData?.user?.email;
   if (!email) return { error: "No se encontró el correo del doctor." };
 
-  const redirectTo = `${getAppUrl()}/auth/callback?next=/restablecer-contrasena`;
+  const redirectTo = `${getAppUrl()}/restablecer-contrasena`;
   const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) return { error: error.message };
   return {};

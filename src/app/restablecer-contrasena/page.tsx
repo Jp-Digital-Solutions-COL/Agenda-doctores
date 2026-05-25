@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,37 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 
+type Stage = "loading" | "form" | "success" | "invalid";
+
 export default function RestablecerContrasenaPage() {
   const router = useRouter();
+  const [stage, setStage] = useState<Stage>("loading");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    // Read URL params client-side to avoid Next.js Suspense requirement on useSearchParams
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const errorParam = params.get("error");
+
+    if (errorParam || !code) {
+      setStage("invalid");
+      return;
+    }
+
+    // Exchange the PKCE recovery code for an active session
+    const supabase = createClient();
+    supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+      if (exchangeError) {
+        setStage("invalid");
+      } else {
+        setStage("form");
+      }
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,16 +53,30 @@ export default function RestablecerContrasenaPage() {
       setError("Las contraseñas no coinciden.");
       return;
     }
-    setLoading(true);
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setSaving(true);
     setError("");
     const supabase = createClient();
     const { error: updateError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    setSaving(false);
     if (updateError) {
-      setError(updateError.message);
+      if (
+        updateError.message.toLowerCase().includes("session") ||
+        updateError.message.toLowerCase().includes("expired") ||
+        updateError.message.toLowerCase().includes("jwt")
+      ) {
+        setError(
+          "La sesión ha expirado. Cierra esta pestaña y solicita un nuevo enlace de restablecimiento."
+        );
+      } else {
+        setError(updateError.message);
+      }
       return;
     }
-    setSuccess(true);
+    setStage("success");
     setTimeout(() => router.push("/login"), 2500);
   }
 
@@ -56,22 +94,30 @@ export default function RestablecerContrasenaPage() {
         <Card className="w-full">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-lg">Nueva contraseña</CardTitle>
-            <CardDescription>
-              Escribe tu nueva contraseña para acceder a tu cuenta.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            {success ? (
-              <div className="text-center space-y-2 py-4">
-                <p className="text-sm font-medium text-green-700">
-                  ¡Contraseña actualizada correctamente!
+            {stage === "loading" && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                Verificando enlace...
+              </p>
+            )}
+
+            {stage === "invalid" && (
+              <div className="text-center space-y-3 py-4">
+                <p className="text-sm font-medium text-destructive">
+                  Este enlace de restablecimiento no es válido o ya expiró.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Redirigiendo al inicio de sesión...
+                  Solicita un nuevo enlace desde el panel de administración.
                 </p>
               </div>
-            ) : (
+            )}
+
+            {stage === "form" && (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <CardDescription className="text-center text-sm pb-1">
+                  Escribe tu nueva contraseña para acceder a tu cuenta.
+                </CardDescription>
                 <div className="space-y-2">
                   <Label htmlFor="password">Nueva contraseña</Label>
                   <PasswordInput
@@ -80,7 +126,7 @@ export default function RestablecerContrasenaPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    disabled={loading}
+                    disabled={saving}
                     autoComplete="new-password"
                     placeholder="Mínimo 6 caracteres"
                   />
@@ -92,16 +138,27 @@ export default function RestablecerContrasenaPage() {
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={saving}
                     autoComplete="new-password"
                     placeholder="Repite la contraseña"
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Guardando..." : "Guardar nueva contraseña"}
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? "Guardando..." : "Guardar nueva contraseña"}
                 </Button>
               </form>
+            )}
+
+            {stage === "success" && (
+              <div className="text-center space-y-2 py-4">
+                <p className="text-sm font-medium text-green-700">
+                  ¡Contraseña actualizada correctamente!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Redirigiendo al inicio de sesión...
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
