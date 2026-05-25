@@ -352,11 +352,15 @@ export default function CalendarWeekView({
                     onSlotClick(day, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                   }}
                 >
-                  {/* Off-hours shading: solo cuando hay un doctor seleccionado */}
+                  {/* Off-hours / descanso: solo cuando hay un doctor seleccionado */}
                   {doctors.length === 1 && (() => {
+                    const doctorHasSchedules = horarios.some((h) => h.doctor_id === doctors[0].id);
                     const h = horarios.find(
                       (h) => h.doctor_id === doctors[0].id && h.dia_semana === day.getDay()
                     );
+                    if (doctorHasSchedules && !h) {
+                      return <WeekRestDayBlock />;
+                    }
                     const wTop = h?.hora_inicio
                       ? Math.max(0, timeTopPx(h.hora_inicio.slice(0, 5)))
                       : (WORK_START - GRID_START) * HOUR_HEIGHT;
@@ -486,6 +490,23 @@ function WeekCitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function WeekRestDayBlock() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none flex items-center justify-center"
+      style={{
+        background: "hsl(var(--muted))",
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(0,0,0,0.055) 6px, rgba(0,0,0,0.055) 12px)",
+      }}
+    >
+      <p className="text-[10px] text-muted-foreground/50 font-medium select-none tracking-wide [writing-mode:vertical-lr] rotate-180">
+        Día de descanso
+      </p>
+    </div>
   );
 }
 

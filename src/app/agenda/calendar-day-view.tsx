@@ -308,9 +308,11 @@ export default function CalendarDayView({
               const color = doctorColor(doctorIdx >= 0 ? doctorIdx : idx);
               const colGhost = ghost?.colIdx === idx ? ghost : null;
               const layout = computeOverlapLayout(docCitas);
+              const doctorHasSchedules = horarios.some((h) => h.doctor_id === doc.id);
               const horarioDia = horarios.find(
                 (h) => h.doctor_id === doc.id && h.dia_semana === date.getDay()
               );
+              const isRestDay = doctorHasSchedules && !horarioDia;
               const almuerzo =
                 horarioDia?.almuerzo_inicio && horarioDia?.almuerzo_fin
                   ? { inicio: horarioDia.almuerzo_inicio.slice(0, 5), fin: horarioDia.almuerzo_fin.slice(0, 5) }
@@ -327,8 +329,10 @@ export default function CalendarDayView({
                     onSlotClick(date, timeFromClickY(e.clientY, e.currentTarget.getBoundingClientRect()));
                   }}
                 >
-                  {/* Off-hours shading based on doctor's actual schedule */}
-                  {(() => {
+                  {/* Día de descanso o fuera de horario */}
+                  {isRestDay ? (
+                    <RestDayBlock />
+                  ) : (() => {
                     const wTop = horarioDia?.hora_inicio
                       ? Math.max(0, timeTopPx(horarioDia.hora_inicio.slice(0, 5)))
                       : (WORK_START - GRID_START) * HOUR_HEIGHT;
@@ -458,6 +462,23 @@ function CitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function RestDayBlock() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none flex items-center justify-center"
+      style={{
+        background: "hsl(var(--muted))",
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(0,0,0,0.055) 6px, rgba(0,0,0,0.055) 12px)",
+      }}
+    >
+      <p className="text-[11px] text-muted-foreground/50 font-medium select-none tracking-wide">
+        Día de descanso
+      </p>
+    </div>
   );
 }
 
