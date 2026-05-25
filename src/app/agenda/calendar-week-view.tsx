@@ -365,8 +365,8 @@ export default function CalendarWeekView({
                       : (WORK_END - GRID_START) * HOUR_HEIGHT;
                     return (
                       <>
-                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: 0, height: wTop }} />}
-                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                        <WeekOffHoursBlock top={0} height={wTop} />
+                        <WeekOffHoursBlock top={wBottom} height={TOTAL_H - wBottom} />
                       </>
                     );
                   })()}
@@ -486,6 +486,28 @@ function WeekCitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function WeekOffHoursBlock({ top, height }: { top: number; height: number }) {
+  if (height <= 0) return null;
+  return (
+    <div
+      className="absolute left-0 right-0 pointer-events-none overflow-hidden"
+      style={{
+        top,
+        height,
+        background: "hsl(var(--muted))",
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 10px)",
+      }}
+    >
+      {height > 20 && (
+        <p className="text-[9px] text-muted-foreground/50 font-medium px-1 pt-0.5 select-none leading-tight">
+          Fuera de horario
+        </p>
+      )}
+    </div>
   );
 }
 

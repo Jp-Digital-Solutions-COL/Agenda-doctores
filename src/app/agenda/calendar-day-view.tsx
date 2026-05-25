@@ -337,8 +337,8 @@ export default function CalendarDayView({
                       : (WORK_END - GRID_START) * HOUR_HEIGHT;
                     return (
                       <>
-                        {wTop > 0 && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: 0, height: wTop }} />}
-                        {wBottom < TOTAL_H && <div className="absolute left-0 right-0 bg-muted/80 pointer-events-none" style={{ top: wBottom, height: TOTAL_H - wBottom }} />}
+                        <OffHoursBlock top={0} height={wTop} />
+                        <OffHoursBlock top={wBottom} height={TOTAL_H - wBottom} />
                       </>
                     );
                   })()}
@@ -458,6 +458,28 @@ function CitaBlock({
         )}
       </div>
     </button>
+  );
+}
+
+function OffHoursBlock({ top, height }: { top: number; height: number }) {
+  if (height <= 0) return null;
+  return (
+    <div
+      className="absolute left-0 right-0 pointer-events-none overflow-hidden"
+      style={{
+        top,
+        height,
+        background: "hsl(var(--muted))",
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 10px)",
+      }}
+    >
+      {height > 24 && (
+        <p className="text-[10px] text-muted-foreground/50 font-medium px-1.5 pt-1 select-none leading-tight">
+          Fuera de horario
+        </p>
+      )}
+    </div>
   );
 }
 
