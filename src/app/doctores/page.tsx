@@ -13,7 +13,7 @@ export default async function DoctoresPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("consultorio_id")
+    .select("consultorio_id, rol")
     .eq("id", user.id)
     .single();
 
@@ -23,7 +23,7 @@ export default async function DoctoresPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <DoctoresClient doctores={doctores} />
+      <DoctoresClient doctores={doctores} rol={profile.rol ?? "admin"} />
     </div>
   );
 }

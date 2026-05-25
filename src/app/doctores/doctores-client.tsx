@@ -5,6 +5,7 @@ import type { Doctor } from "./types";
 import { toggleDoctorActivo } from "./actions";
 import DoctorDialog from "./doctor-dialog";
 import HorariosSheet from "./horarios-sheet";
+import SedesSheet from "./sedes-sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -16,15 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, CalendarDays } from "lucide-react";
+import { Plus, Pencil, CalendarDays, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 interface Props {
   doctores: Doctor[];
+  rol: string;
 }
 
-export default function DoctoresClient({ doctores: initial }: Props) {
+export default function DoctoresClient({ doctores: initial, rol }: Props) {
+  const esSecretaria = rol === "secretaria";
+
   const [, startTransition] = useTransition();
   const [optimisticDoctores, updateOptimistic] = useOptimistic(
     initial,
@@ -35,6 +39,7 @@ export default function DoctoresClient({ doctores: initial }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [schedulesDoctor, setSchedulesDoctor] = useState<Doctor | null>(null);
+  const [sedesDoctor, setSedesDoctor] = useState<Doctor | null>(null);
 
   function handleToggle(doctor: Doctor) {
     startTransition(async () => {
@@ -82,16 +87,20 @@ export default function DoctoresClient({ doctores: initial }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Doctores</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Los doctores{" "}
-            <span className="font-semibold text-foreground">activos</span> se
-            incluyen en la facturación mensual.
-          </p>
+          {!esSecretaria && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Los doctores{" "}
+              <span className="font-semibold text-foreground">activos</span> se
+              incluyen en la facturación mensual.
+            </p>
+          )}
         </div>
-        <Button onClick={handleAdd} className="shrink-0">
-          <Plus className="h-4 w-4 mr-2" />
-          Agregar doctor
-        </Button>
+        {!esSecretaria && (
+          <Button onClick={handleAdd} className="shrink-0">
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar doctor
+          </Button>
+        )}
       </div>
 
       {/* Tabla o estado vacío */}
@@ -100,9 +109,11 @@ export default function DoctoresClient({ doctores: initial }: Props) {
           <p className="text-muted-foreground text-sm">
             No hay doctores registrados.
           </p>
-          <Button variant="outline" className="mt-4" onClick={handleAdd}>
-            Agregar el primer doctor
-          </Button>
+          {!esSecretaria && (
+            <Button variant="outline" className="mt-4" onClick={handleAdd}>
+              Agregar el primer doctor
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-md border">
@@ -111,14 +122,16 @@ export default function DoctoresClient({ doctores: initial }: Props) {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Especialidad</TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1.5">
-                    Activo
-                    <span className="text-xs font-normal text-muted-foreground">
-                      (facturado)
-                    </span>
-                  </div>
-                </TableHead>
+                {!esSecretaria && (
+                  <TableHead>
+                    <div className="flex items-center gap-1.5">
+                      Activo
+                      <span className="text-xs font-normal text-muted-foreground">
+                        (facturado)
+                      </span>
+                    </div>
+                  </TableHead>
+                )}
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -153,45 +166,72 @@ export default function DoctoresClient({ doctores: initial }: Props) {
                       <span className="text-muted-foreground/50">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant="outline"
-                        className={
-                          doctor.activo
-                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                            : "border-gray-200 bg-gray-50 text-gray-500"
-                        }
-                      >
-                        {doctor.activo ? "● Activo" : "○ Inactivo"}
-                      </Badge>
-                      <Switch
-                        checked={doctor.activo}
-                        onCheckedChange={() => handleToggle(doctor)}
-                        aria-label={`${doctor.activo ? "Desactivar" : "Activar"} a ${doctor.nombre}`}
-                      />
-                    </div>
-                  </TableCell>
+                  {!esSecretaria && (
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant="outline"
+                          className={
+                            doctor.activo
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : "border-gray-200 bg-gray-50 text-gray-500"
+                          }
+                        >
+                          {doctor.activo ? "● Activo" : "○ Inactivo"}
+                        </Badge>
+                        <Switch
+                          checked={doctor.activo}
+                          onCheckedChange={() => handleToggle(doctor)}
+                          aria-label={`${doctor.activo ? "Desactivar" : "Activar"} a ${doctor.nombre}`}
+                        />
+                      </div>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(doctor)}
-                        className="gap-1.5"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSchedulesDoctor(doctor)}
-                        className="gap-1.5"
-                      >
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        Horarios
-                      </Button>
+                      {esSecretaria ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSedesDoctor(doctor)}
+                            className="gap-1.5"
+                          >
+                            <MapPin className="h-3.5 w-3.5" />
+                            Consultorios
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSchedulesDoctor(doctor)}
+                            className="gap-1.5"
+                          >
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            Horarios
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(doctor)}
+                            className="gap-1.5"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSchedulesDoctor(doctor)}
+                            className="gap-1.5"
+                          >
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            Horarios
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -201,19 +241,26 @@ export default function DoctoresClient({ doctores: initial }: Props) {
         </div>
       )}
 
-      {/* Dialog: agregar / editar doctor */}
-      {/* key fuerza re-mount al cambiar de doctor → resetea estado del form */}
-      <DoctorDialog
-        key={editingDoctor?.id ?? "__nuevo__"}
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        doctor={editingDoctor}
-      />
+      {/* Dialog: agregar / editar doctor (solo admin) */}
+      {!esSecretaria && (
+        <DoctorDialog
+          key={editingDoctor?.id ?? "__nuevo__"}
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          doctor={editingDoctor}
+        />
+      )}
 
       {/* Sheet: gestionar horarios */}
       <HorariosSheet
         doctor={schedulesDoctor}
         onClose={() => setSchedulesDoctor(null)}
+      />
+
+      {/* Sheet: gestionar consultorios adicionales (secretaria) */}
+      <SedesSheet
+        doctor={sedesDoctor}
+        onClose={() => setSedesDoctor(null)}
       />
     </div>
   );
