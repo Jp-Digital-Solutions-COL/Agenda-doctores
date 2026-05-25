@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHorarios, saveHorarios } from "./actions";
+import { getHorarios, saveHorarios, getUbicaciones } from "./actions";
 import {
   DIAS_SEMANA,
   DEFAULT_HORARIO_DIA,
   type Doctor,
   type HorarioDia,
+  type Ubicacion,
 } from "./types";
 import {
   Sheet,
@@ -15,6 +16,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -40,6 +48,7 @@ function buildInitialForm(
           hora_fin: h.hora_fin.slice(0, 5),
           almuerzo_inicio: h.almuerzo_inicio ? h.almuerzo_inicio.slice(0, 5) : "",
           almuerzo_fin: h.almuerzo_fin ? h.almuerzo_fin.slice(0, 5) : "",
+          ubicacion_id: h.ubicacion_id ?? null,
         }
       : { ...DEFAULT_HORARIO_DIA };
   }
@@ -48,6 +57,7 @@ function buildInitialForm(
 
 export default function HorariosSheet({ doctor, onClose }: Props) {
   const [form, setForm] = useState<Record<number, HorarioDia>>({});
+  const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -56,12 +66,16 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
   useEffect(() => {
     if (!doctor) {
       setForm({});
+      setUbicaciones([]);
       return;
     }
     setLoading(true);
     setError("");
-    getHorarios(doctor.id)
-      .then((data) => setForm(buildInitialForm(data)))
+    Promise.all([getHorarios(doctor.id), getUbicaciones(doctor.id)])
+      .then(([horarios, ubs]) => {
+        setForm(buildInitialForm(horarios));
+        setUbicaciones(ubs);
+      })
       .finally(() => setLoading(false));
   }, [doctor?.id]);
 
@@ -240,6 +254,38 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
                             />
                           </div>
                         </div>
+
+                        {/* Sede del día */}
+                        {ubicaciones.length > 0 && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">
+                              Sede del día
+                            </Label>
+                            <Select
+                              value={d.ubicacion_id ?? ""}
+                              onValueChange={(v) =>
+                                updateDia(dia.value, { ubicacion_id: v || null })
+                              }
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Consultorio principal" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Consultorio principal</SelectItem>
+                                {ubicaciones.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>
+                                    {u.nombre}
+                                    {u.direccion && (
+                                      <span className="text-muted-foreground ml-1.5 text-xs">
+                                        · {u.direccion}
+                                      </span>
+                                    )}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

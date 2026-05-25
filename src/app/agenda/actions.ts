@@ -74,6 +74,8 @@ export async function getCitas(
   );
 }
 
+type UbicacionInfo = { nombre: string; direccion: string | null; telefono: string | null } | null;
+
 /**
  * Horas disponibles para un doctor en una fecha.
  * dayStartISO = UTC ISO de la medianoche local del día (new Date(y,m-1,d).toISOString() en el cliente).
@@ -84,7 +86,7 @@ export async function getHorasDisponibles(
   fecha: string,       // "YYYY-MM-DD" — para calcular dia_semana
   dayStartISO: string, // UTC ISO de medianoche local del día
   citaIdExcluir?: string
-): Promise<{ slots: string[]; duracionCita: number }> {
+): Promise<{ slots: string[]; duracionCita: number; ubicacion: UbicacionInfo }> {
   const supabase = await createClient();
 
   const [y, mo, d] = fecha.split("-").map(Number);
@@ -92,7 +94,7 @@ export async function getHorasDisponibles(
 
   const { data: horarioData } = await supabase
     .from("horarios")
-    .select("hora_inicio, hora_fin, almuerzo_inicio, almuerzo_fin")
+    .select("hora_inicio, hora_fin, almuerzo_inicio, almuerzo_fin, ubicacion_id, ubicaciones_doctor(nombre, direccion, telefono)")
     .eq("doctor_id", doctorId)
     .eq("dia_semana", diaSemana)
     .single();
@@ -150,7 +152,34 @@ export async function getHorasDisponibles(
     }
   }
 
-  return { slots, duracionCita: dur };
+  const ubicacion = (horarioData as { ubicaciones_doctor?: UbicacionInfo } | null)?.ubicaciones_doctor ?? null;
+
+  return { slots, duracionCita: dur, ubicacion };
+}
+
+/** Devuelve la sede del doctor para el día de semana de una fecha dada (en hora Bogotá). */
+async function getUbicacionParaDia(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  doctorId: string,
+  inicioISO: string
+): Promise<UbicacionInfo> {
+  const fechaBogota = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(inicioISO));
+  const [y, mo, d] = fechaBogota.split("-").map(Number);
+  const diaSemana = new Date(y, mo - 1, d).getDay();
+
+  const { data } = await supabase
+    .from("horarios")
+    .select("ubicaciones_doctor(nombre, direccion, telefono)")
+    .eq("doctor_id", doctorId)
+    .eq("dia_semana", diaSemana)
+    .maybeSingle();
+
+  return (data as { ubicaciones_doctor?: UbicacionInfo } | null)?.ubicaciones_doctor ?? null;
 }
 
 export async function createCita(input: {
@@ -196,11 +225,12 @@ export async function createCita(input: {
 
   // Enviar correo de confirmación (no bloquea la creación si falla)
   try {
-    const [pacienteResult, doctorResult, perfilResult, consultorioResult] = await Promise.all([
+    const [pacienteResult, doctorResult, perfilResult, consultorioResult, ubicacion] = await Promise.all([
       supabase.from("pacientes").select("nombre, email").eq("id", input.pacienteId).single(),
       supabase.from("doctores").select("nombre, foto_url, especialidad").eq("id", input.doctorId).single(),
       supabase.from("profiles").select("telefono").eq("id", user.id).single(),
       supabase.from("consultorios").select("nombre, direccion, telefono_contacto").eq("id", profile.consultorio_id).single(),
+      getUbicacionParaDia(supabase, input.doctorId, input.inicioISO),
     ]);
 
     const pacienteEmail = pacienteResult.data?.email;
@@ -213,6 +243,11 @@ export async function createCita(input: {
       const horaLabel = inicio.toLocaleTimeString("es-CO", {
         hour: "2-digit", minute: "2-digit", hour12: false, timeZone: tz,
       });
+
+      // Usar la sede del horario si existe, si no el consultorio principal
+      const lugarNombre = ubicacion?.nombre ?? (consultorioResult.data as { nombre?: string | null } | null)?.nombre ?? null;
+      const lugarDireccion = ubicacion?.direccion ?? (consultorioResult.data as { direccion?: string | null } | null)?.direccion ?? null;
+      const lugarTelefono = ubicacion?.telefono ?? (consultorioResult.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null;
 
       const emailResult = await sendConfirmacionCita({
         to: pacienteEmail,
@@ -227,9 +262,9 @@ export async function createCita(input: {
         secretariaEmail: user.email ?? null,
         titulo: "Cita agendada",
         intro: "le informamos que se ha agendado su cita con los siguientes detalles",
-        consultorioNombre: (consultorioResult.data as { nombre?: string | null } | null)?.nombre ?? null,
-        consultorioDireccion: (consultorioResult.data as { direccion?: string | null } | null)?.direccion ?? null,
-        consultorioTelefono: (consultorioResult.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null,
+        consultorioNombre: lugarNombre,
+        consultorioDireccion: lugarDireccion,
+        consultorioTelefono: lugarTelefono,
       });
 
       if (emailResult.error) {
@@ -373,17 +408,27 @@ export async function sendConfirmacionEmail(params: {
       .eq("id", params.citaId);
   }
 
-  const [doctorResult, profileResult] = await Promise.all([
+  const [doctorResult, profileResult, citaResult] = await Promise.all([
     supabase.from("doctores").select("foto_url, especialidad").eq("id", params.doctorId).single(),
     user
       ? supabase.from("profiles").select("telefono, consultorio_id").eq("id", user.id).single()
       : Promise.resolve({ data: null }),
+    supabase.from("citas").select("inicio").eq("id", params.citaId).single(),
   ]);
 
   const consultorioId = (profileResult.data as { consultorio_id?: string | null } | null)?.consultorio_id;
-  const consultorioResult = consultorioId
-    ? await supabase.from("consultorios").select("nombre, direccion, telefono_contacto").eq("id", consultorioId).single()
-    : null;
+  const [consultorioResult, ubicacion] = await Promise.all([
+    consultorioId
+      ? supabase.from("consultorios").select("nombre, direccion, telefono_contacto").eq("id", consultorioId).single()
+      : Promise.resolve(null),
+    citaResult.data?.inicio
+      ? getUbicacionParaDia(supabase, params.doctorId, citaResult.data.inicio)
+      : Promise.resolve(null),
+  ]);
+
+  const lugarNombre = ubicacion?.nombre ?? (consultorioResult?.data as { nombre?: string | null } | null)?.nombre ?? null;
+  const lugarDireccion = ubicacion?.direccion ?? (consultorioResult?.data as { direccion?: string | null } | null)?.direccion ?? null;
+  const lugarTelefono = ubicacion?.telefono ?? (consultorioResult?.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null;
 
   return sendConfirmacionCita({
     to: params.to,
@@ -397,9 +442,9 @@ export async function sendConfirmacionEmail(params: {
     secretariaWA: (profileResult.data as { telefono?: string | null } | null)?.telefono ?? null,
     secretariaEmail: user?.email ?? null,
     tokenConfirmacion: token,
-    consultorioNombre: (consultorioResult?.data as { nombre?: string | null } | null)?.nombre ?? null,
-    consultorioDireccion: (consultorioResult?.data as { direccion?: string | null } | null)?.direccion ?? null,
-    consultorioTelefono: (consultorioResult?.data as { telefono_contacto?: string | null } | null)?.telefono_contacto ?? null,
+    consultorioNombre: lugarNombre,
+    consultorioDireccion: lugarDireccion,
+    consultorioTelefono: lugarTelefono,
   });
 }
 

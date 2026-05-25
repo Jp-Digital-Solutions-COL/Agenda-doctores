@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { X, Search, Stethoscope, User, Plus, ArrowLeft } from "lucide-react";
+import { X, Search, Stethoscope, User, Plus, ArrowLeft, MapPin } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -35,6 +35,8 @@ interface Props {
   defaultHora?: string;   // "HH:MM"
   onCreated: () => Promise<void>;
 }
+
+type UbicacionInfo = { nombre: string; direccion: string | null; telefono: string | null } | null;
 
 export default function NuevaCitaDialog({
   open,
@@ -52,6 +54,7 @@ export default function NuevaCitaDialog({
   const [slots, setSlots] = useState<string[]>([]);
   const [duracion, setDuracion] = useState(30);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [ubicacionDelDia, setUbicacionDelDia] = useState<UbicacionInfo>(null);
 
   // Patient search
   const [pacienteSearch, setPacienteSearch] = useState("");
@@ -76,14 +79,16 @@ export default function NuevaCitaDialog({
   useEffect(() => {
     if (!doctorId || !fecha) {
       setSlots([]);
+      setUbicacionDelDia(null);
       return;
     }
     setLoadingSlots(true);
     const [y, mo, d] = fecha.split("-").map(Number);
     const dayStartISO = new Date(y, mo - 1, d).toISOString();
-    getHorasDisponibles(doctorId, fecha, dayStartISO).then(({ slots: s, duracionCita }) => {
+    getHorasDisponibles(doctorId, fecha, dayStartISO).then(({ slots: s, duracionCita, ubicacion }) => {
       setSlots(s);
       if (duracionCita) setDuracion(duracionCita);
+      setUbicacionDelDia(ubicacion);
       setLoadingSlots(false);
       setHora((prev) => (s.includes(prev) ? prev : ""));
     });
@@ -218,9 +223,23 @@ export default function NuevaCitaDialog({
 
               {/* Slots de hora */}
               <div className="space-y-2">
-                <Label className="text-sm">
-                  Hora <span className="text-destructive">*</span>
-                </Label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-sm">
+                    Hora <span className="text-destructive">*</span>
+                  </Label>
+                  {/* Sede badge — visible cuando hay slots y el doctor tiene sede configurada ese día */}
+                  {!loadingSlots && slots.length > 0 && ubicacionDelDia && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      {ubicacionDelDia.nombre}
+                      {ubicacionDelDia.direccion && (
+                        <span className="text-teal-600/70 hidden sm:inline">
+                          · {ubicacionDelDia.direccion}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
                 {!doctorId || !fecha ? (
                   <p className="text-xs text-muted-foreground py-1">
                     Selecciona un doctor y una fecha para ver los horarios disponibles.

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { createDoctor, updateDoctor } from "./actions";
-import type { Doctor } from "./types";
+import { useEffect, useRef, useState } from "react";
+import { createDoctor, updateDoctor, getUbicaciones, createUbicacion, deleteUbicacion } from "./actions";
+import type { Doctor, Ubicacion } from "./types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Camera, X, Loader2 } from "lucide-react";
+import { Camera, X, Loader2, MapPin, Plus, Trash2 } from "lucide-react";
 import { convertToWebP, uploadToCloudinary } from "@/lib/cloudinary";
 
 interface Props {
@@ -43,6 +43,27 @@ export default function DoctorDialog({ open, onClose, doctor }: Props) {
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sedes
+  const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
+  const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
+  const [showAddSede, setShowAddSede] = useState(false);
+  const [newNombre, setNewNombre] = useState("");
+  const [newDireccion, setNewDireccion] = useState("");
+  const [newTelefono, setNewTelefono] = useState("");
+  const [savingSede, setSavingSede] = useState(false);
+  const [sedeError, setSedeError] = useState("");
+
+  useEffect(() => {
+    if (!doctor) {
+      setUbicaciones([]);
+      return;
+    }
+    setLoadingUbicaciones(true);
+    getUbicaciones(doctor.id)
+      .then(setUbicaciones)
+      .finally(() => setLoadingUbicaciones(false));
+  }, [doctor?.id]);
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -54,7 +75,6 @@ export default function DoctorDialog({ open, onClose, doctor }: Props) {
     try {
       const blob = await convertToWebP(file);
       setPendingBlob(blob);
-      // Revoke previous blob URL if it was a local preview
       if (photoPreview && !photoPreview.startsWith("http")) {
         URL.revokeObjectURL(photoPreview);
       }
@@ -105,132 +125,279 @@ export default function DoctorDialog({ open, onClose, doctor }: Props) {
     }
   }
 
+  async function handleAddSede() {
+    if (!doctor || !newNombre.trim()) return;
+    setSavingSede(true);
+    setSedeError("");
+    const result = await createUbicacion(
+      doctor.id,
+      newNombre,
+      newDireccion || null,
+      newTelefono || null
+    );
+    setSavingSede(false);
+    if (result.error) {
+      setSedeError(result.error);
+    } else if (result.data) {
+      setUbicaciones((prev) => [...prev, result.data!]);
+      setNewNombre("");
+      setNewDireccion("");
+      setNewTelefono("");
+      setShowAddSede(false);
+    }
+  }
+
+  async function handleDeleteSede(id: string) {
+    const result = await deleteUbicacion(id);
+    if (!result.error) {
+      setUbicaciones((prev) => prev.filter((u) => u.id !== id));
+    }
+  }
+
   const initials = getInitials(nombre);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>{doctor ? "Editar doctor" : "Agregar doctor"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 py-2">
-          {/* Avatar picker */}
-          <div className="flex items-center gap-4">
-            <div className="relative group shrink-0">
-              <div
-                className="w-20 h-20 rounded-full overflow-hidden bg-muted border-2 border-border flex items-center justify-center cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {photoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoPreview} alt="Foto" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xl font-bold text-muted-foreground select-none">
-                    {initials || <Camera className="h-6 w-6 opacity-40" />}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {/* Avatar picker */}
+            <div className="flex items-center gap-4">
+              <div className="relative group shrink-0">
+                <div
+                  className="w-20 h-20 rounded-full overflow-hidden bg-muted border-2 border-border flex items-center justify-center cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {photoPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoPreview} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl font-bold text-muted-foreground select-none">
+                      {initials || <Camera className="h-6 w-6 opacity-40" />}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                {photoPreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
+                    title="Quitar foto"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <p className="text-sm font-medium">Foto del doctor</p>
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG o WebP · Máx 10 MB
+                  <br />
+                  Se convierte a WebP automáticamente
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {photoPreview ? "Cambiar foto" : "Subir foto"}
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {/* Título */}
+            <div className="space-y-2">
+              <Label>
+                Título{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <div className="flex gap-2">
+                {(["Dr.", "Dra."] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setTitulo(titulo === t ? null : t)}
+                    className={`px-5 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                      titulo === t
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+                {titulo && (
+                  <span className="text-xs text-muted-foreground self-center ml-1">
+                    (clic para deseleccionar)
                   </span>
                 )}
-                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                  <Camera className="h-5 w-5 text-white" />
-                </div>
               </div>
-              {photoPreview && (
-                <button
-                  type="button"
-                  onClick={handleRemovePhoto}
-                  className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
-                  title="Quitar foto"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
             </div>
 
-            <div className="space-y-1 min-w-0">
-              <p className="text-sm font-medium">Foto del doctor</p>
-              <p className="text-xs text-muted-foreground">
-                JPG, PNG o WebP · Máx 10 MB
-                <br />
-                Se convierte a WebP automáticamente
-              </p>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs text-primary hover:underline"
-              >
-                {photoPreview ? "Cambiar foto" : "Subir foto"}
-              </button>
+            <div className="space-y-2">
+              <Label htmlFor="nombre">Nombre completo</Label>
+              <Input
+                id="nombre"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Juan García"
+                required
+                disabled={loading}
+                autoFocus
+              />
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
-
-          {/* Título */}
-          <div className="space-y-2">
-            <Label>
-              Título{" "}
-              <span className="text-muted-foreground font-normal">(opcional)</span>
-            </Label>
-            <div className="flex gap-2">
-              {(["Dr.", "Dra."] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setTitulo(titulo === t ? null : t)}
-                  className={`px-5 py-1.5 rounded-md border text-sm font-medium transition-colors ${
-                    titulo === t
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-input hover:bg-muted"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-              {titulo && (
-                <span className="text-xs text-muted-foreground self-center ml-1">
-                  (clic para deseleccionar)
-                </span>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="especialidad">
+                Especialidad{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Input
+                id="especialidad"
+                value={especialidad}
+                onChange={(e) => setEspecialidad(e.target.value)}
+                placeholder="Medicina general"
+                disabled={loading}
+              />
             </div>
+
+            {/* Sedes adicionales — solo al editar */}
+            {doctor && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-sm font-medium">Sedes adicionales</span>
+                    <span className="text-xs text-muted-foreground">(opcional)</span>
+                  </div>
+                  {!showAddSede && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSede(true)}
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Agregar sede
+                    </button>
+                  )}
+                </div>
+
+                {loadingUbicaciones ? (
+                  <p className="text-xs text-muted-foreground">Cargando...</p>
+                ) : (
+                  <>
+                    {ubicaciones.length > 0 && (
+                      <div className="space-y-2">
+                        {ubicaciones.map((u) => (
+                          <div
+                            key={u.id}
+                            className="flex items-start justify-between gap-2 rounded-lg border px-3 py-2.5 bg-muted/20"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium">{u.nombre}</p>
+                              {u.direccion && (
+                                <p className="text-xs text-muted-foreground truncate">{u.direccion}</p>
+                              )}
+                              {u.telefono && (
+                                <p className="text-xs text-muted-foreground">{u.telefono}</p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSede(u.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors p-0.5 shrink-0 mt-0.5"
+                              title="Eliminar sede"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {showAddSede && (
+                      <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Nueva sede
+                        </p>
+                        <div className="space-y-2">
+                          <Input
+                            value={newNombre}
+                            onChange={(e) => setNewNombre(e.target.value)}
+                            placeholder="Nombre de la sede *"
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Input
+                            value={newDireccion}
+                            onChange={(e) => setNewDireccion(e.target.value)}
+                            placeholder="Dirección (opcional)"
+                            className="h-8 text-sm"
+                          />
+                          <Input
+                            value={newTelefono}
+                            onChange={(e) => setNewTelefono(e.target.value)}
+                            placeholder="Teléfono (opcional)"
+                            className="h-8 text-sm"
+                            type="tel"
+                          />
+                        </div>
+                        {sedeError && <p className="text-xs text-destructive">{sedeError}</p>}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 h-8 text-xs"
+                            onClick={() => { setShowAddSede(false); setSedeError(""); setNewNombre(""); setNewDireccion(""); setNewTelefono(""); }}
+                            disabled={savingSede}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="flex-1 h-8 text-xs"
+                            onClick={handleAddSede}
+                            disabled={!newNombre.trim() || savingSede}
+                          >
+                            {savingSede ? "Guardando..." : "Agregar"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {ubicaciones.length === 0 && !showAddSede && (
+                      <p className="text-xs text-muted-foreground">
+                        Agrega sedes si el doctor atiende en múltiples consultorios.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre completo</Label>
-            <Input
-              id="nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Juan García"
-              required
-              disabled={loading}
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="especialidad">
-              Especialidad{" "}
-              <span className="text-muted-foreground font-normal">(opcional)</span>
-            </Label>
-            <Input
-              id="especialidad"
-              value={especialidad}
-              onChange={(e) => setEspecialidad(e.target.value)}
-              placeholder="Medicina general"
-              disabled={loading}
-            />
-          </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <DialogFooter className="pt-2">
+          <DialogFooter className="px-6 py-4 border-t bg-background shrink-0 gap-2">
             <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>

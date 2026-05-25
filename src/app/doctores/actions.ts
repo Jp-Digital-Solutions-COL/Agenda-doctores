@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Doctor, Horario, HorarioDia } from "./types";
+import type { Doctor, Horario, HorarioDia, Ubicacion } from "./types";
 
 export async function getDoctores(): Promise<Doctor[]> {
   const supabase = await createClient();
@@ -112,6 +112,7 @@ export async function saveHorarios(
       hora_fin: d.hora_fin,
       almuerzo_inicio: d.almuerzo_inicio || null,
       almuerzo_fin: d.almuerzo_fin || null,
+      ubicacion_id: d.ubicacion_id || null,
     }));
 
   // Eliminar todos y reinsertar (estrategia simple y atómica)
@@ -127,6 +128,52 @@ export async function saveHorarios(
     if (error) return { error: error.message };
   }
 
+  revalidatePath("/doctores");
+  return {};
+}
+
+// ── Ubicaciones / Sedes ────────────────────────────────────────────────────
+
+export async function getUbicaciones(doctorId: string): Promise<Ubicacion[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ubicaciones_doctor")
+    .select("id, doctor_id, nombre, direccion, telefono")
+    .eq("doctor_id", doctorId)
+    .order("created_at");
+  if (error) return [];
+  return (data ?? []) as Ubicacion[];
+}
+
+export async function createUbicacion(
+  doctorId: string,
+  nombre: string,
+  direccion: string | null,
+  telefono: string | null
+): Promise<{ data?: Ubicacion; error?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ubicaciones_doctor")
+    .insert({
+      doctor_id: doctorId,
+      nombre: nombre.trim(),
+      direccion: direccion?.trim() || null,
+      telefono: telefono?.trim() || null,
+    })
+    .select("id, doctor_id, nombre, direccion, telefono")
+    .single();
+
+  if (error) return { error: error.message };
+  return { data: data as Ubicacion };
+}
+
+export async function deleteUbicacion(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("ubicaciones_doctor")
+    .delete()
+    .eq("id", id);
+  if (error) return { error: error.message };
   revalidatePath("/doctores");
   return {};
 }
