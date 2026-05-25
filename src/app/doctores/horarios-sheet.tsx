@@ -170,21 +170,39 @@ export default function HorariosSheet({ doctor, onClose }: Props) {
                 return (
                   <div
                     key={dia.value}
-                    className="rounded-lg border px-4 py-3 transition-opacity"
-                    style={{ opacity: d.enabled ? 1 : 0.5 }}
+                    className="rounded-lg border overflow-hidden"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{dia.label}</span>
-                      <Switch
-                        checked={d.enabled}
-                        onCheckedChange={(checked) =>
-                          updateDia(dia.value, { enabled: checked })
-                        }
-                      />
+                    <div
+                      className="px-4 py-3"
+                      style={
+                        !d.enabled
+                          ? {
+                              backgroundImage:
+                                "repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(0,0,0,0.045) 6px, rgba(0,0,0,0.045) 12px)",
+                            }
+                          : undefined
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-medium text-sm">{dia.label}</span>
+                          {!d.enabled && (
+                            <span className="text-xs text-muted-foreground/60 font-normal">
+                              Día de descanso
+                            </span>
+                          )}
+                        </div>
+                        <Switch
+                          checked={d.enabled}
+                          onCheckedChange={(checked) =>
+                            updateDia(dia.value, { enabled: checked })
+                          }
+                        />
+                      </div>
                     </div>
 
                     {d.enabled && (
-                      <div className="mt-3 space-y-3">
+                      <div className="px-4 pb-3 pt-3 space-y-3">
                         {/* Jornada */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
