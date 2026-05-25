@@ -491,14 +491,15 @@ export async function createPaciente(input: {
   return { data: data as unknown as PacienteBasic };
 }
 
-/** Devuelve el maps_url del lugar de una cita (sede del día o consultorio principal). */
-export async function getMapsUrlParaCita(
+/** Devuelve nombre, dirección y maps_url del lugar de una cita (sede del día o consultorio principal). */
+export async function getUbicacionParaCita(
   doctorId: string,
   citaId: string
-): Promise<string | null> {
+): Promise<{ nombre: string | null; direccion: string | null; mapsUrl: string | null }> {
+  const empty = { nombre: null, direccion: null, mapsUrl: null };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return empty;
 
   const [citaResult, profileResult] = await Promise.all([
     supabase.from("citas").select("inicio").eq("id", citaId).single(),
@@ -508,17 +509,18 @@ export async function getMapsUrlParaCita(
   const ubicacion = citaResult.data?.inicio
     ? await getUbicacionParaDia(supabase, doctorId, citaResult.data.inicio)
     : null;
-  if (ubicacion?.maps_url) return ubicacion.maps_url;
+  if (ubicacion) return { nombre: ubicacion.nombre, direccion: ubicacion.direccion, mapsUrl: ubicacion.maps_url };
 
   const consultorioId = (profileResult.data as { consultorio_id?: string | null } | null)?.consultorio_id;
-  if (!consultorioId) return null;
+  if (!consultorioId) return empty;
 
   const { data: consult } = await supabase
     .from("consultorios")
-    .select("maps_url")
+    .select("nombre, direccion, maps_url")
     .eq("id", consultorioId)
     .single();
-  return (consult as { maps_url?: string | null } | null)?.maps_url ?? null;
+  const c = consult as { nombre?: string | null; direccion?: string | null; maps_url?: string | null } | null;
+  return { nombre: c?.nombre ?? null, direccion: c?.direccion ?? null, mapsUrl: c?.maps_url ?? null };
 }
 
 export async function getHorariosParaCalendario(

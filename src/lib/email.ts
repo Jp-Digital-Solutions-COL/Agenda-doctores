@@ -116,9 +116,7 @@ export async function sendConfirmacionCita(params: {
                     ${consultorioNombre ? `<br/><span style="font-size:15px;font-weight:600;color:#111827;">${consultorioNombre}</span>` : ""}
                     ${consultorioDireccion ? `<br/><span style="font-size:14px;color:#374151;">${consultorioDireccion}</span>` : ""}
                     ${consultorioTelefono ? `<br/><span style="font-size:13px;color:#6b7280;">Tel: ${consultorioTelefono}</span>` : ""}
-                    ${consultorioMapsUrl ? `<br/><a href="${consultorioMapsUrl}" target="_blank" style="display:inline-block;margin-top:8px;padding:6px 14px;background:#ffffff;border:1px solid #dadce0;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;color:#1A73E8;">
-                      📍 Cómo llegar
-                    </a>` : ""}
+                    ${consultorioMapsUrl ? `<br/><a href="${consultorioMapsUrl}" target="_blank" style="display:inline-table;margin-top:8px;padding:6px 14px;background:#ffffff;border:1px solid #dadce0;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;color:#1A73E8;vertical-align:middle;"><img src="${APP_URL}/icon-google-maps.svg" width="13" height="19" alt="" style="display:inline;vertical-align:middle;margin-right:5px;" /> Cómo llegar</a>` : ""}
                   </td>
                 </tr>
               </table>` : ""}
