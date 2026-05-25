@@ -60,6 +60,12 @@ export default async function AdelatarPage() {
             >
               Agenda
             </Link>
+            <Link
+              href="/doctores"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
+            >
+              Doctores
+            </Link>
             <span className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1 rounded-md">
               Adelantar
             </span>

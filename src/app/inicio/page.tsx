@@ -198,6 +198,12 @@ export default async function InicioPage() {
               Agenda
             </Link>
             <Link
+              href="/doctores"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
+            >
+              Doctores
+            </Link>
+            <Link
               href="/adelantar"
               className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-muted transition-colors"
             >
