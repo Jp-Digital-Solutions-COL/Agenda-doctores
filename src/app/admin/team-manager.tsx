@@ -17,6 +17,8 @@ import {
   toggleAsignacion,
   getDoctoresCuentas,
   createCuentaDoctor,
+  resetPasswordForUser,
+  resetPasswordForDoctor,
   type SecretariaGlobal,
   type DoctorAdmin,
   type DoctorItem,
@@ -39,6 +41,7 @@ import {
   Camera,
   ChevronDown,
   ChevronRight,
+  KeyRound,
   Lock,
   LockOpen,
   Loader2,
@@ -161,6 +164,11 @@ function SecretariaRow({
   const [savingActivo, setSavingActivo] = useState(false);
   const [savingConsultorio, setSavingConsultorio] = useState(false);
 
+  // Password reset state
+  const [resetPwLoading, setResetPwLoading] = useState(false);
+  const [resetPwSent, setResetPwSent] = useState(false);
+  const [resetPwError, setResetPwError] = useState("");
+
   // Edit state
   const [editOpen, setEditOpen] = useState(false);
   const [editNombre, setEditNombre] = useState(sec.nombre);
@@ -174,6 +182,19 @@ function SecretariaRow({
     setSavingActivo(true);
     await onToggleActivo(sec.id, v);
     setSavingActivo(false);
+  }
+
+  async function handleResetPassword() {
+    setResetPwLoading(true);
+    setResetPwError("");
+    const r = await resetPasswordForUser(sec.email);
+    setResetPwLoading(false);
+    if (r.error) {
+      setResetPwError(r.error);
+    } else {
+      setResetPwSent(true);
+      setTimeout(() => setResetPwSent(false), 3000);
+    }
   }
 
   async function handleAssignConsultorio(val: string) {
@@ -263,6 +284,30 @@ function SecretariaRow({
         >
           <Pencil className="h-3 w-3" />
         </button>
+
+        {/* Reset password button */}
+        <button
+          type="button"
+          title={resetPwSent ? "Correo enviado" : "Restablecer contraseña"}
+          onClick={handleResetPassword}
+          disabled={resetPwLoading || resetPwSent}
+          className={`h-6 w-6 flex items-center justify-center rounded-md border transition-colors shrink-0 ${
+            resetPwSent
+              ? "border-green-500 text-green-600 bg-green-50"
+              : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          {resetPwLoading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <KeyRound className="h-3 w-3" />
+          )}
+        </button>
+        {resetPwError && (
+          <p className="text-xs text-destructive shrink-0 max-w-[120px] truncate" title={resetPwError}>
+            {resetPwError}
+          </p>
+        )}
 
         {/* Activo toggle */}
         <TogglePill
@@ -711,6 +756,11 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
   const [accesoLoading, setAccesoLoading] = useState(false);
   const [accesoError, setAccesoError] = useState("");
 
+  // Password reset for doctor accounts
+  const [resetDocLoading, setResetDocLoading] = useState<string | null>(null);
+  const [resetDocSent, setResetDocSent] = useState<Set<string>>(new Set());
+  const [resetDocError, setResetDocError] = useState<{ id: string; msg: string } | null>(null);
+
   // Edit doctor
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editDocNombre, setEditDocNombre] = useState("");
@@ -835,6 +885,22 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
     setDocPendingBlob(null);
     setFormOpen(false);
     await loadDoctors(consultorioId);
+  }
+
+  async function handleResetPasswordDoc(docId: string) {
+    setResetDocLoading(docId);
+    setResetDocError(null);
+    const r = await resetPasswordForDoctor(docId);
+    setResetDocLoading(null);
+    if (r.error) {
+      setResetDocError({ id: docId, msg: r.error });
+    } else {
+      setResetDocSent((prev) => new Set(prev).add(docId));
+      setTimeout(
+        () => setResetDocSent((prev) => { const s = new Set(prev); s.delete(docId); return s; }),
+        3000
+      );
+    }
   }
 
   async function handleToggleActivo(id: string, activo: boolean) {
@@ -1290,6 +1356,35 @@ function DoctoresTab({ consultorios }: { consultorios: ConsultorioAdmin[] }) {
                         className="text-xs text-primary hover:underline shrink-0"
                       >
                         {mostrandoAcceso ? "Cancelar" : "Dar acceso"}
+                      </button>
+                    )}
+
+                    {/* Reset password button (only if has account) */}
+                    {tieneAcceso && (
+                      <button
+                        type="button"
+                        title={
+                          resetDocSent.has(doc.id)
+                            ? "Correo enviado"
+                            : resetDocError?.id === doc.id
+                            ? resetDocError.msg
+                            : "Restablecer contraseña"
+                        }
+                        onClick={() => handleResetPasswordDoc(doc.id)}
+                        disabled={resetDocLoading === doc.id || resetDocSent.has(doc.id)}
+                        className={`h-7 w-7 flex items-center justify-center rounded-md border transition-colors shrink-0 ${
+                          resetDocSent.has(doc.id)
+                            ? "border-green-500 text-green-600 bg-green-50"
+                            : resetDocError?.id === doc.id
+                            ? "border-destructive text-destructive"
+                            : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {resetDocLoading === doc.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <KeyRound className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     )}
 

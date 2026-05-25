@@ -511,6 +511,51 @@ export async function createCuentaDoctor(
   return {};
 }
 
+// ── Restablecimiento de contraseña ───────────────────────────────────
+
+function getAppUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
+}
+
+export async function resetPasswordForUser(
+  email: string
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+  const redirectTo = `${getAppUrl()}/auth/callback?next=/restablecer-contrasena`;
+  const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function resetPasswordForDoctor(
+  doctorId: string
+): Promise<{ error?: string }> {
+  await assertSuperadmin();
+  const admin = createAdminClient();
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("doctor_id", doctorId)
+    .eq("rol", "doctor")
+    .single();
+
+  if (!profile) return { error: "Este doctor no tiene cuenta de acceso." };
+
+  const { data: userData } = await admin.auth.admin.getUserById(profile.id);
+  const email = userData?.user?.email;
+  if (!email) return { error: "No se encontró el correo del doctor." };
+
+  const redirectTo = `${getAppUrl()}/auth/callback?next=/restablecer-contrasena`;
+  const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function toggleAsignacion(
   secretariaId: string,
   doctorId: string,
